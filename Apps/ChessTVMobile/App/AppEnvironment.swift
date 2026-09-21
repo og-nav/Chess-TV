@@ -97,38 +97,12 @@ final class AppEnvironment {
 
     /// Settings committed a new server URL (or cleared it).
     ///
-    /// A different host means a different device record: the install token this phone holds was
-    /// minted by the old one and is meaningless — worse, sending it to a host the user just
-    /// typed would hand a bearer token to a stranger. So the identity is dropped and the phone
-    /// registers again.
-    func serverURLChanged(hostChanged: Bool) {
-        if hostChanged {
-            // The order here is the whole of the guarantee, so it is written out rather than left
-            // to be inferred.
-            //
-            // 1. Both clients go away first. `reset()` ends by trying to register again, and with
-            //    the old client still in place that attempt would go to the host we are leaving.
-            // 2. The credential is re-scoped *synchronously*, before any client for the new host
-            //    can exist, so no request can carry the old host's token to the new address.
-            // 3. The follow list is re-queued as a fresh install. The new host holds nothing, and
-            //    without this its empty list would be adopted and wipe what the user follows.
-            registrar.unregisterCurrentIdentity()   // to the old host, with the old token, before either goes
-            registrar.setClient(nil)
-            follows.setClient(nil)
-            credentials.setScope(ServerURL.identity(of: server.url))
-            registrar.reset()
-        }
-        rebuildClient()
-        server.probe(using: client)
-        syncWatch()
-    }
-
     // MARK: - Push, from scratch
 
     /// Settings then Notifications then "Reset push notifications".
     ///
-    /// The order is the whole of it, and it is the same order `serverURLChanged` uses for the
-    /// same reason: nothing may be registered against an identity that is about to be dropped.
+    /// The order is the whole of it: nothing may be registered against an identity that is
+    /// about to be dropped.
     ///
     /// 1. Ask for permission if it has never been asked. A phone that was never allowed to show
     ///    an alert has no push token to fix, and iOS will not issue one.

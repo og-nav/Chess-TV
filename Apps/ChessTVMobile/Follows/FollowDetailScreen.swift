@@ -21,7 +21,7 @@ struct FollowDetailScreen: View {
                         .listRowBackground(Palette.panel)
                 } footer: {
                     if !app.follows.hasServer {
-                        Text("No push server is configured, so these switches are saved but nothing will be sent. Set one in Settings.")
+                        Text("These switches are saved on this phone. The alert service is unavailable, so nothing will be sent.")
                             .foregroundStyle(Palette.amber)
                     }
                 }

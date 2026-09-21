@@ -105,7 +105,8 @@ PLIST
     cp "$ASC_KEY_PATH" "$keydir/AuthKey_$ASC_KEY_ID.p8"; chmod 600 "$keydir/AuthKey_$ASC_KEY_ID.p8"
     local ipa; ipa=$(ls "$export_dir"/*.ipa | head -1)
     echo "== validating $ipa with App Store Connect (no upload)"
-    API_PRIVATE_KEYS_DIR="$PWD/$keydir" xcrun altool --validate-app -f "$ipa" -t "$platform" \
+    local altool_platform=$platform; [[ $platform == tvos ]] && altool_platform=appletvos   # altool spells it differently
+    API_PRIVATE_KEYS_DIR="$PWD/$keydir" xcrun altool --validate-app -f "$ipa" -t "$altool_platform" \
       --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID" 2>&1 | tee -a "$log" | grep -vE "^\s*$" | tail -20
     echo "== validation finished; to upload, rerun with --upload"
   fi

@@ -47,3 +47,4 @@ Bundle/
 **/__pycache__/
 *.pyc
 Configs/Local.xcconfig
+.xcodegen.lock
