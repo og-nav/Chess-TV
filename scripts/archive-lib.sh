@@ -96,8 +96,9 @@ PLIST
     grep -E "error:|Error Domain|No signing|No profiles|requires a provisioning|No Accounts|Provisioning profile|EXPORT FAILED|ITMS-" "$log" | sort -u | head -40 >&2
     return 1
   fi
-  echo "== export ok"; ls -la "$export_dir"
+  echo "== export ok"
   (( upload )) && { echo "== uploaded to App Store Connect; processing takes a few minutes, then it appears under TestFlight"; return 0; }
+  ls -la "$export_dir"   # an upload writes nothing locally, so only a local export has a folder to show
 
   if (( validate )); then
     # altool finds keys by name in API_PRIVATE_KEYS_DIR, so hand it a private copy named the way it wants.
