@@ -127,7 +127,7 @@ final class ServerConfiguration {
 
     /// Where the service the app ships against lives. A public app's user should not have to
     /// stand up a VPS to be told a game started, so every install points here.
-    static let defaultURL = URL(string: "https://chesstv.zzzlabs.dev")!
+    static let defaultURL = PublishedService.url
 
     var isConfigured: Bool { url != nil }
 

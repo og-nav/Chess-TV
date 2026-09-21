@@ -81,8 +81,8 @@ struct SettingsScreen: View {
 
             Section {
                 Text("No accounts, no ads, no analytics.")
-                Link("Privacy policy", destination: URL(string: "https://chesstv.zzzlabs.dev/privacy")!)
-                Link("Support", destination: URL(string: "https://chesstv.zzzlabs.dev/support")!)
+                Link("Privacy policy", destination: PublishedService.privacyPolicy)
+                Link("Support", destination: PublishedService.support)
             } header: {
                 Text("Privacy")
             }

@@ -61,7 +61,7 @@ struct PushSurfaceTests {
 
 @Suite("Durable activity registration")
 struct ActivityQueueTests {
-    private let host = "https://chesstv.zzzlabs.dev"
+    private let host = "https://follow.example.com"
 
     @Test func rotationDuringAwaitDoesNotAcknowledgeNewToken() {
         var queue = ActivityWorkQueue()
