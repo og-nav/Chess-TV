@@ -1,0 +1,41 @@
+{
+ "tour": {
+  "id": "WCHtour1",
+  "name": "World Championship 2026",
+  "slug": "world-championship-2026",
+  "tier": 5,
+  "createdAt": 1789100000000,
+  "image": "https://image.lichess1.org/display?fmt=webp&h=400&op=thumbnail&path=wch2026.webp&w=800"
+ },
+ "rounds": [
+  {
+   "id": "WCHr0001",
+   "name": "Round 1",
+   "slug": "round-1",
+   "startsAt": 1789910000000,
+   "finished": true,
+   "finishedAt": 1789920000000,
+   "ongoing": false
+  },
+  {
+   "id": "WCHr0002",
+   "name": "Round 2",
+   "slug": "round-2",
+   "startsAt": 1789998200000,
+   "ongoing": true,
+   "finished": false
+  },
+  {
+   "id": "WCHr0003",
+   "name": "Round 3",
+   "slug": "round-3",
+   "startsAt": 1790000600000,
+   "ongoing": false,
+   "finished": false
+  }
+ ],
+ "group": {
+  "id": "WCHgroup",
+  "name": "World Championship 2026"
+ }
+}

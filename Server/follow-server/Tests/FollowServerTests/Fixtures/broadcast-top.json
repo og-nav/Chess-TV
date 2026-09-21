@@ -1,0 +1,26 @@
+{
+ "active": [
+  {
+   "tour": {
+    "id": "WCHtour1",
+    "name": "World Championship 2026",
+    "slug": "world-championship-2026",
+    "tier": 5,
+    "createdAt": 1789100000000,
+    "image": "https://image.lichess1.org/display?fmt=webp&h=400&op=thumbnail&path=wch2026.webp&w=800"
+   },
+   "round": {
+    "id": "WCHr0002",
+    "name": "Round 2",
+    "slug": "round-2",
+    "startsAt": 1789998200000,
+    "ongoing": true,
+    "finished": false
+   }
+  }
+ ],
+ "upcoming": [],
+ "past": {
+  "currentPageResults": []
+ }
+}

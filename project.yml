@@ -1,0 +1,445 @@
+name: ChessTV
+options:
+  bundleIdPrefix: com.navin
+  deploymentTarget:
+    tvOS: "26.0"
+    iOS: "26.0"
+    watchOS: "26.0"
+  xcodeVersion: "27.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+settings:
+  base:
+    DEVELOPMENT_TEAM: ""
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    CODE_SIGN_STYLE: Automatic
+    # App Store version. The build number (CURRENT_PROJECT_VERSION) comes from Configs/Version.xcconfig,
+    # which scripts/build-number.sh --write derives from the git commit count.
+    MARKETING_VERSION: "1.0"
+configFiles:
+  Debug: Configs/Version.xcconfig
+  Release: Configs/Version.xcconfig
+packages:
+  FollowKit:
+    path: Packages/FollowKit
+  GameSessionKit:
+    path: Packages/GameSessionKit
+  ChessCore:
+    path: Packages/ChessCore
+  ChessUI:
+    path: Packages/ChessUI
+  LichessKit:
+    path: Packages/LichessKit
+  EngineKit:
+    path: Packages/EngineKit
+  ImageryKit:
+    path: Packages/ImageryKit
+targets:
+  ChessTV:
+    type: application
+    platform: tvOS
+    sources:
+      - path: assets/PrivacyInfo.xcprivacy
+        buildPhase: resources
+      - path: Apps/ChessTV
+        excludes: ["Resources/nn-*.nnue.md5"]
+      - path: Apps/ChessTVCredits
+      - path: assets/Licenses
+        buildPhase: resources
+      - path: Apps/ChessTVFixtures
+      - path: Apps/ChessTVUITestSupport
+      - path: Fixtures
+        type: folder
+        buildPhase: resources
+    dependencies:
+      - package: GameSessionKit
+      - package: ChessCore
+      - package: ChessUI
+      - package: LichessKit
+      - package: EngineKit
+      - package: ImageryKit
+    info:
+      path: Apps/ChessTV/Info.plist
+      properties:
+        CFBundleDisplayName: Chess TV
+        CFBundleName: ChessTV
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UIUserInterfaceStyle: Dark
+        UILaunchScreen: {}
+        NSAppleMusicUsageDescription: Chess TV plays your Apple Music playlists in the background while you watch.
+        ITSAppUsesNonExemptEncryption: false
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.navin.chesstv
+        PRODUCT_NAME: ChessTV
+        ASSETCATALOG_COMPILER_APPICON_NAME: App Icon & Top Shelf Image
+        TARGETED_DEVICE_FAMILY: "3"
+        ENABLE_PREVIEWS: YES
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: NO
+  ChessTVTests:
+    type: bundle.unit-test
+    platform: tvOS
+    sources:
+      - path: Apps/ChessTVTests
+      - path: Fixtures/feed-castling.ndjson
+        buildPhase: resources
+      - path: Fixtures/feed-blitz.ndjson
+        buildPhase: resources
+    dependencies:
+      - target: ChessTV
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.navin.chesstv.tests
+  ChessTVMobile:
+    type: application
+    platform: iOS
+    sources:
+      - path: assets/PrivacyInfo.xcprivacy
+        buildPhase: resources
+      - path: Apps/ChessTVMobile
+      - path: Apps/ChessTVCredits
+      - path: assets/Licenses
+        buildPhase: resources
+      - path: assets/Brand.xcassets
+      - path: Apps/ChessTVShared
+      - path: Apps/ChessTVFixtures
+      - path: Apps/ChessTVUITestSupport
+      - path: Fixtures
+        type: folder
+        buildPhase: resources
+      - path: Apps/ChessTV/Resources/nn-1a298aa575a0.nnue
+        buildPhase: resources
+      - path: Apps/ChessTV/Resources/Sounds
+        buildPhase: resources
+    dependencies:
+      - package: GameSessionKit
+      - package: ChessCore
+      - package: ChessUI
+      - package: LichessKit
+      - package: ImageryKit
+      - package: EngineKit
+      - package: FollowKit
+      - target: ChessTVNotificationService
+        embed: true
+      - target: ChessTVNotificationContent
+        embed: true
+      - target: ChessTVLiveActivity
+        embed: true
+      - target: ChessTVWatch
+        embed: true
+    info:
+      path: Apps/ChessTVMobile/Info.plist
+      properties:
+        CFBundleDisplayName: Chess TV
+        CFBundleURLTypes:
+          - CFBundleURLName: com.navin.chesstv
+            CFBundleURLSchemes: [chesstv]
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        UILaunchScreen: {}
+        UIUserInterfaceStyle: Dark
+        NSUserNotificationsUsageDescription: Get updates for the chess players, games and tournaments you follow.
+        UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        NSSupportsLiveActivities: true
+        NSSupportsLiveActivitiesFrequentUpdates: true
+        UIBackgroundModes: [remote-notification]
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        LSRequiresIPhoneOS: true
+        ITSAppUsesNonExemptEncryption: false
+    entitlements:
+      path: Apps/ChessTVMobile/ChessTVMobile.entitlements
+      properties:
+        aps-environment: $(APS_ENVIRONMENT)
+        com.apple.security.application-groups: [group.com.navin.chesstv]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.navin.chesstv
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        GENERATE_INFOPLIST_FILE: NO
+      configs:
+        Debug:
+          APS_ENVIRONMENT: development
+        Release:
+          APS_ENVIRONMENT: production
+  ChessTVMobileTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Apps/ChessTVMobileTests
+      - path: Apps/ChessTVSharedTests
+      - path: Fixtures/activity-end.apns
+        buildPhase: resources
+      - path: Fixtures/activity-update.apns
+        buildPhase: resources
+      - path: Fixtures/push-end.apns
+        buildPhase: resources
+      - path: Fixtures/push-longthink.apns
+        buildPhase: resources
+      - path: Fixtures/push-move.apns
+        buildPhase: resources
+      - path: Fixtures/push-round-finished.apns
+        buildPhase: resources
+      - path: Fixtures/push-round-live.apns
+        buildPhase: resources
+      - path: Fixtures/push-start.apns
+        buildPhase: resources
+      - path: Fixtures/push-tournament-finished.apns
+        buildPhase: resources
+      - path: Fixtures/push-tournament-soon.apns
+        buildPhase: resources
+    dependencies:
+      - target: ChessTVMobile
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.navin.chesstv.mobile.tests
+        GENERATE_INFOPLIST_FILE: YES
+  ChessTVUITests:
+    type: bundle.ui-testing
+    platform: tvOS
+    sources:
+      - path: Apps/ChessTVUITests
+      - path: Apps/ChessTVUITestSupport
+    dependencies:
+      - target: ChessTV
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.navin.chesstv.uitests
+        TEST_TARGET_NAME: ChessTV
+        GENERATE_INFOPLIST_FILE: YES
+  ChessTVMobileUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: Apps/ChessTVMobileUITests
+      - path: Apps/ChessTVUITestSupport
+    dependencies:
+      - target: ChessTVMobile
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.navin.chesstv.mobile.uitests
+        TEST_TARGET_NAME: ChessTVMobile
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+  ChessTVNotificationService:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: assets/PrivacyInfo.xcprivacy
+        buildPhase: resources
+      - path: Apps/ChessTVNotificationService
+      - path: Apps/ChessTVShared
+        excludes: [InteractionFeedback.swift, WatchGameDetailModel.swift, LiveActivityController.swift, PhoneWatchBridge.swift, WatchSyncStore.swift]
+    dependencies:
+      - package: ChessCore
+      - package: ChessUI
+      - package: FollowKit
+    info:
+      path: Apps/ChessTVNotificationService/Info.plist
+      properties:
+        CFBundleDisplayName: Chess TV Notifications
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.usernotifications.service
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).NotificationService
+    entitlements:
+      path: Apps/ChessTVNotificationService/ChessTVNotificationService.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.navin.chesstv]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.navin.chesstv.notification-service
+        TARGETED_DEVICE_FAMILY: "1,2"
+        APPLICATION_EXTENSION_API_ONLY: YES
+  ChessTVNotificationContent:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: assets/PrivacyInfo.xcprivacy
+        buildPhase: resources
+      - path: Apps/ChessTVNotificationContent
+      - path: Apps/ChessTVShared
+        excludes: [InteractionFeedback.swift, WatchGameDetailModel.swift, LiveActivityController.swift, PhoneWatchBridge.swift, WatchSyncStore.swift]
+    dependencies:
+      - package: ChessCore
+      - package: ChessUI
+      - package: FollowKit
+    info:
+      path: Apps/ChessTVNotificationContent/Info.plist
+      properties:
+        CFBundleDisplayName: Chess TV Board
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.usernotifications.content-extension
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).NotificationViewController
+          NSExtensionAttributes:
+            UNNotificationExtensionCategory: [GAME_MOVE, TOURNAMENT_EVENT]
+            UNNotificationExtensionInitialContentSizeRatio: 1.1
+            UNNotificationExtensionDefaultContentHidden: true
+            UNNotificationExtensionUserInteractionEnabled: true
+    entitlements:
+      path: Apps/ChessTVNotificationContent/ChessTVNotificationContent.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.navin.chesstv]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.navin.chesstv.notification-content
+        TARGETED_DEVICE_FAMILY: "1,2"
+        APPLICATION_EXTENSION_API_ONLY: YES
+  ChessTVLiveActivity:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: assets/PrivacyInfo.xcprivacy
+        buildPhase: resources
+      - path: Apps/ChessTVLiveActivity
+      - path: Apps/ChessTVShared
+        excludes: [InteractionFeedback.swift, WatchGameDetailModel.swift, LiveActivityController.swift, PhoneWatchBridge.swift, WatchSyncStore.swift]
+    dependencies:
+      - package: ChessCore
+      - package: ChessUI
+      - package: FollowKit
+    info:
+      path: Apps/ChessTVLiveActivity/Info.plist
+      properties:
+        CFBundleDisplayName: Chess TV Live
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Apps/ChessTVLiveActivity/ChessTVLiveActivity.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.navin.chesstv]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.navin.chesstv.live-activity
+        TARGETED_DEVICE_FAMILY: "1,2"
+        APPLICATION_EXTENSION_API_ONLY: YES
+  ChessTVWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: assets/PrivacyInfo.xcprivacy
+        buildPhase: resources
+      - path: Apps/ChessTVWatch
+      - path: assets/Brand.xcassets
+      - path: Apps/ChessTVShared
+        excludes: [LiveActivityController.swift, PhoneWatchBridge.swift, BoardImageRenderer.swift, BannerDownloader.swift]
+    dependencies:
+      - package: ChessCore
+      - package: ChessUI
+      - package: LichessKit
+      - package: FollowKit
+      - target: ChessTVWatchWidget
+        embed: true
+    info:
+      path: Apps/ChessTVWatch/Info.plist
+      properties:
+        CFBundleDisplayName: Chess TV
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: com.navin.chesstv
+        WKRunsIndependentlyOfCompanionApp: false
+    entitlements:
+      path: Apps/ChessTVWatch/ChessTVWatch.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.navin.chesstv]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.navin.chesstv.watchkitapp
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "4"
+  ChessTVWatchWidget:
+    type: app-extension
+    platform: watchOS
+    sources:
+      - path: assets/PrivacyInfo.xcprivacy
+        buildPhase: resources
+      - path: Apps/ChessTVWatchWidget
+      - path: Apps/ChessTVShared
+        excludes: [InteractionFeedback.swift, WatchGameDetailModel.swift, LiveActivityController.swift, PhoneWatchBridge.swift, WatchSyncStore.swift, BoardImageRenderer.swift, BannerDownloader.swift]
+    dependencies:
+      - package: ChessCore
+      - package: ChessUI
+      - package: FollowKit
+    info:
+      path: Apps/ChessTVWatchWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Chess TV Board
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Apps/ChessTVWatchWidget/ChessTVWatchWidget.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.navin.chesstv]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.navin.chesstv.watchkitapp.widget
+        TARGETED_DEVICE_FAMILY: "4"
+        APPLICATION_EXTENSION_API_ONLY: YES
+schemes:
+  ChessTV:
+    build:
+      targets:
+        ChessTV: all
+        ChessTVTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [ChessTVTests]
+      environmentVariables:
+        CHESSTV_TESTING: "1"
+  ChessTVMobile:
+    build:
+      targets:
+        ChessTVMobile: all
+        ChessTVMobileTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [ChessTVMobileTests]
+      environmentVariables:
+        CHESSTV_TESTING: "1"
+  ChessTVWatch:
+    build:
+      targets:
+        ChessTVWatch: all
+    run:
+      config: Debug
+  ChessTVUITests:
+    build:
+      targets:
+        ChessTV: all
+        ChessTVUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [ChessTVUITests]
+  ChessTVMobileUITests:
+    build:
+      targets:
+        ChessTVMobile: all
+        ChessTVMobileUITests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets: [ChessTVMobileUITests]

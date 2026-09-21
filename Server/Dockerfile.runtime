@@ -1,0 +1,12 @@
+# Use a release binary built by swift:6.2-noble on linux/amd64.
+# Copy it to a temporary source-free context as `follow-server`, then:
+# docker build -f Server/Dockerfile.runtime -t chesstv-follow:local <temporary-context>
+FROM swift:6.2-noble
+RUN groupadd --system --gid 10001 follow \
+    && useradd --system --uid 10001 --gid follow --home /var/lib/follow-server follow \
+    && mkdir -p /var/lib/follow-server && chown follow:follow /var/lib/follow-server
+COPY follow-server /usr/local/bin/follow-server
+ENV FOLLOW_HOST=0.0.0.0 FOLLOW_PORT=8099 FOLLOW_DB=/var/lib/follow-server/follow.sqlite FOLLOW_REQUIRE_HTTPS=1
+USER follow
+EXPOSE 8099
+ENTRYPOINT ["/usr/local/bin/follow-server"]

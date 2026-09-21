@@ -1,0 +1,42 @@
+{
+  "Simulator Target Bundle": "com.navin.chesstv",
+  "aps": {
+    "alert": {
+      "title": "Game over: 1–0",
+      "body": "GM Carlsen – GM Nepomniachtchi · 21. Bg2",
+      "subtitle": "Tata Steel Masters · Round 5"
+    },
+    "category": "GAME_MOVE",
+    "thread-id": "kPvMVqBp",
+    "mutable-content": 1,
+    "relevance-score": 1.0,
+    "sound": "default"
+  },
+  "d": {
+    "kind": "gameEnd",
+    "roundId": "kPvMVqBp",
+    "gameId": "0bIQTGrq",
+    "tourName": "Tata Steel Masters",
+    "roundName": "Round 5",
+    "white": {
+      "name": "Carlsen",
+      "title": "GM",
+      "rating": 2839,
+      "fed": "NOR"
+    },
+    "black": {
+      "name": "Nepomniachtchi",
+      "title": "GM",
+      "rating": 2789,
+      "fed": "FID"
+    },
+    "fen": "r1b2rk1/pp2ppbp/6p1/4P3/6PN/2B4P/PPP1QPB1/2KR3q b - - 1 21",
+    "lastMove": "f1g2",
+    "san": "Bg2",
+    "ply": 41,
+    "whiteClock": 4530,
+    "blackClock": 2871,
+    "status": "1-0",
+    "sentAt": "2026-09-19T14:59:05Z"
+  }
+}

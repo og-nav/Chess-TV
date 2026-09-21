@@ -1,0 +1,42 @@
+{
+  "Simulator Target Bundle": "com.navin.chesstv",
+  "aps": {
+    "alert": {
+      "title": "Nepomniachtchi is thinking",
+      "body": "After 21. Bg2 · White 1:20:12 · Black 1:01:42",
+      "subtitle": "Tata Steel Masters · Round 5"
+    },
+    "category": "GAME_MOVE",
+    "thread-id": "kPvMVqBp",
+    "mutable-content": 1,
+    "relevance-score": 0.6,
+    "sound": "default"
+  },
+  "d": {
+    "kind": "longThink",
+    "roundId": "kPvMVqBp",
+    "gameId": "0bIQTGrq",
+    "tourName": "Tata Steel Masters",
+    "roundName": "Round 5",
+    "white": {
+      "name": "Carlsen",
+      "title": "GM",
+      "rating": 2839,
+      "fed": "NOR"
+    },
+    "black": {
+      "name": "Nepomniachtchi",
+      "title": "GM",
+      "rating": 2789,
+      "fed": "FID"
+    },
+    "fen": "r1b2rk1/pp2ppbp/6p1/4P3/6PN/2B4P/PPP1QPB1/2KR3q b - - 1 21",
+    "lastMove": "f1g2",
+    "san": "Bg2",
+    "ply": 41,
+    "whiteClock": 4812,
+    "blackClock": 3702,
+    "status": "*",
+    "sentAt": "2026-09-19T14:44:38Z"
+  }
+}

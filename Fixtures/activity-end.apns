@@ -1,0 +1,23 @@
+{
+  "Simulator Target Bundle": "com.navin.chesstv",
+  "aps": {
+    "timestamp": 1789829945,
+    "event": "end",
+    "content-state": {
+      "fen": "r1b2rk1/pp2ppbp/6p1/4P3/6PN/2B4P/PPP1QPB1/2KR3q b - - 1 21",
+      "lastMove": "f1g2",
+      "san": "Bg2",
+      "ply": 41,
+      "whiteClock": 4530,
+      "blackClock": 2871,
+      "clockRunningFor": null,
+      "status": "1-0",
+      "asOf": 811522745.0
+    },
+    "alert": {
+      "title": "Game over: 1–0",
+      "body": "Carlsen – Nepomniachtchi"
+    },
+    "dismissal-date": 1789830545
+  }
+}

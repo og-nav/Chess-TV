@@ -1,0 +1,3 @@
+// swift-tools-version: 6.2
+import PackageDescription
+let package = Package(name: "GameSessionKit", platforms: [.iOS(.v26), .tvOS(.v26), .macOS(.v15)], products: [.library(name: "GameSessionKit", targets: ["GameSessionKit"])], dependencies: [.package(path: "../ChessCore"), .package(path: "../ChessUI"), .package(path: "../LichessKit"), .package(path: "../EngineKit"), .package(path: "../ImageryKit")], targets: [.target(name: "GameSessionKit", dependencies: ["ChessCore", "ChessUI", "LichessKit", "EngineKit", "ImageryKit"]), .testTarget(name: "GameSessionKitTests", dependencies: ["GameSessionKit"], resources: [.copy("Fixtures")])])

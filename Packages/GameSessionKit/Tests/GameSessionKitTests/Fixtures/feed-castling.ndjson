@@ -1,0 +1,5 @@
+{"t":"featured","d":{"id":"castle01","orientation":"white","players":[{"color":"white","user":{"name":"WhiteTester","id":"whitetester"},"rating":2000,"seconds":180},{"color":"black","user":{"name":"BlackTester","title":"IM","id":"blacktester"},"rating":2100,"seconds":180}],"fen":"r3k2r/pppq1ppp/2npbn2/4p3/4P3/2NPBN2/PPPQ1PPP/R3K2R w KQkq - 4 8"}}
+{"t":"fen","d":{"fen":"r3k2r/pppq1ppp/2npbn2/4p3/4P3/2NPBN2/PPPQ1PPP/R4RK1 b kq - 5 8","lm":"e1h1","wc":176,"bc":180}}
+{"t":"fen","d":{"fen":"2kr3r/pppq1ppp/2npbn2/4p3/4P3/2NPBN2/PPPQ1PPP/R4RK1 w - - 6 9","lm":"e8a8","wc":176,"bc":174}}
+{"t":"featured","d":{"id":"next0002","orientation":"black","players":[{"color":"white","user":{"name":"Alpha","id":"alpha"},"rating":2300,"seconds":60},{"color":"black","user":{"name":"Beta","id":"beta"},"rating":2280,"seconds":60}],"fen":"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"}}
+{"t":"fen","d":{"fen":"rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 1","lm":"e2e4","wc":59,"bc":60}}

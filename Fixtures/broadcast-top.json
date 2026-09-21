@@ -1,0 +1,119 @@
+{
+ "active": [
+  {
+   "tour": {
+    "id": "n1pPI5Q0",
+    "name": "46th FIDE Chess Olympiad Samarkand 2026 | Open | Matches 1-12",
+    "slug": "46th-fide-chess-olympiad-samarkand-2026-open-matches-1-12",
+    "info": {
+     "format": "11-round swiss for teams",
+     "tc": "90 min / 40 moves + 30 min + 30 sec / move",
+     "fideTC": "standard",
+     "location": "Samarkand, Uzbekistan",
+     "timeZone": "Asia/Samarkand",
+     "players": "Caruana, Sindarov, So, Keymer, Abdusattorov, Praggnanandhaa",
+     "website": "https://chessolympiad2026.fide.com/",
+     "standings": "https://s1.chess-results.com/tnr1469895.aspx"
+    },
+    "createdAt": 1788502151053,
+    "url": "https://lichess.org/broadcast/46th-fide-chess-olympiad-samarkand-2026-open-matches-1-12/n1pPI5Q0",
+    "tier": 5,
+    "dates": [
+     1789553700000,
+     1790489700000
+    ],
+    "image": "https://image.lichess1.org/display?fmt=webp&h=400&op=thumbnail&path=guvGEQ4HLTCC.webp&w=800&sig=8baf1856f16d61af2db50b086aecae1da3ee4664",
+    "teamTable": true,
+    "showTeamScores": true
+   },
+   "round": {
+    "id": "bmI956uk",
+    "name": "Round 3",
+    "slug": "round-3",
+    "startsAt": 1789726500000,
+    "url": "https://lichess.org/broadcast/46th-fide-chess-olympiad-samarkand-2026-open-matches-1-12/round-3/bmI956uk"
+   },
+   "roundToLink": {
+    "id": "HnCuRMmB",
+    "name": "Round 2",
+    "slug": "round-2",
+    "finishedAt": 1789660237079,
+    "finished": true,
+    "startsAt": 1789640100000
+   },
+   "group": "46th FIDE Chess Olympiad Samarkand 2026"
+  },
+  {
+   "tour": {
+    "id": "L2ydImaD",
+    "name": "TCEC S30: Playoff & Swiss 10 | Playoff | Cat 2",
+    "slug": "tcec-s30-playoff-swiss-10-playoff-cat-2",
+    "info": {
+     "format": "11-engine 2x Double round-robin",
+     "tc": "30 min + 3 sec / move",
+     "fideTC": "standard",
+     "location": "tcec-chess.com",
+     "timeZone": "Etc/UTC",
+     "website": "https://tcec-chess.com/"
+    },
+    "createdAt": 1788858351726,
+    "url": "https://lichess.org/broadcast/tcec-s30-playoff-swiss-10-playoff-cat-2/L2ydImaD",
+    "tier": 3,
+    "dates": [
+     1788973200000
+    ],
+    "image": "https://image.lichess1.org/display?fmt=webp&h=400&op=thumbnail&path=iXaCegjNnyVg.webp&w=800&sig=959f10efa4efdd23c013ccead001bf01ca8ed8b1"
+   },
+   "round": {
+    "id": "q7gOEObq",
+    "name": "Round 21",
+    "slug": "round-21",
+    "ongoing": true,
+    "startsAt": 1789683722400,
+    "startsAfterPrevious": true,
+    "url": "https://lichess.org/broadcast/tcec-s30-playoff-swiss-10-playoff-cat-2/round-21/q7gOEObq"
+   },
+   "group": "TCEC S30: Playoff & Swiss 10"
+  }
+ ],
+ "upcoming": [],
+ "past": {
+  "currentPage": 1,
+  "currentPageResults": [
+   {
+    "tour": {
+     "id": "GLJSr7YN",
+     "name": "Copa Independencia 2026 | Hidalgo",
+     "slug": "copa-independencia-2026-hidalgo",
+     "info": {
+      "format": "9-round Swiss",
+      "tc": "90 min + 30 sec/move",
+      "fideTC": "standard",
+      "location": "Ciudad de México, México",
+      "timeZone": "America/Mexico_City",
+      "standings": "https://s3.chess-results.com/tnr1461934.aspx?art=1",
+      "regulations": "https://www.promotoresdeajedrez.com/torneos/copaindependencia2026/ver_convocatoria.php"
+     },
+     "createdAt": 1789163485023,
+     "url": "https://lichess.org/broadcast/copa-independencia-2026-hidalgo/GLJSr7YN",
+     "tier": 3,
+     "dates": [
+      1789168200000,
+      1789593000000
+     ],
+     "image": "https://image.lichess1.org/display?fmt=webp&h=400&op=thumbnail&path=YU-iIdXYleZX.webp&w=800&sig=a37ab30e15f11e93de9c4d00dc5b827ae521f120"
+    },
+    "round": {
+     "id": "VA7pQQDy",
+     "name": "Round 9",
+     "slug": "round-9",
+     "finishedAt": 1789608203850,
+     "finished": true,
+     "startsAt": 1789593000000,
+     "url": "https://lichess.org/broadcast/copa-independencia-2026-hidalgo/round-9/VA7pQQDy"
+    },
+    "group": "Copa Independencia 2026"
+   }
+  ]
+ }
+}

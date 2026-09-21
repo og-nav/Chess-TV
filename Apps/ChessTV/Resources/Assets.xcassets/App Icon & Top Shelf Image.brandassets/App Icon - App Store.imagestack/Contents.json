@@ -1,0 +1,20 @@
+{
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  },
+  "layers" : [
+    {
+      "filename" : "Dot.imagestacklayer"
+    },
+    {
+      "filename" : "Signal.imagestacklayer"
+    },
+    {
+      "filename" : "Tiles.imagestacklayer"
+    },
+    {
+      "filename" : "Ground.imagestacklayer"
+    }
+  ]
+}

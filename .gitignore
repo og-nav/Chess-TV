@@ -1,0 +1,49 @@
+# Xcode / SwiftPM
+*.xcodeproj
+*.xcworkspace
+!*.xcworkspace/contents.xcworkspacedata
+DerivedData/
+DerivedData-*/
+.build/
+.build-linux/
+.swiftpm/
+xcuserdata/
+*.xcuserstate
+build/
+# Stockfish network (fetched by scripts/fetch-net.sh)
+*.nnue
+# macOS
+.DS_Store
+# secrets
+*.p8
+*.pem
+*.key
+*.p12
+*.pfx
+*.mobileprovision
+*.provisionprofile
+*.ipa
+*.xcarchive/
+*.xcresult/
+*.log
+id_rsa*
+id_ed25519*
+known_hosts*
+.env
+.env.*
+!.env.example
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Owner-supplied private migration archives and extracted credentials
+bundle/
+Bundle/
+
+# Local tools, conversations and signing configuration
+.claude/
+.codex/
+.agents/
+**/__pycache__/
+*.pyc
+Configs/Local.xcconfig

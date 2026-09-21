@@ -1,0 +1,13 @@
+{"t":"featured","d":{"id":"n4EEhZrA","orientation":"white","players":[{"color":"white","user":{"name":"Niksss2023","title":"GM","flair":"nature.deer","patron":true,"patronColor":3,"id":"niksss2023"},"rating":2854,"seconds":175},{"color":"black","user":{"name":"Pblu35","id":"pblu35"},"rating":2694,"seconds":175}],"fen":"r1b2rk1/pp2ppbp/6p1/4P3/6PN/2B4P/PPP1QP2/2KR1B1q w - - 0 21"}}
+{"t":"fen","d":{"fen":"r1b2rk1/pp2ppbp/6p1/4P3/6PN/2B4P/PPP1QPB1/2KR3q b - - 1 21","lm":"f1g2","wc":51,"bc":117}}
+{"t":"fen","d":{"fen":"r1b2rk1/pp2ppbp/6p1/4P3/6PN/2B4P/PPP1QPBq/2KR4 w - - 2 22","lm":"h1h2","wc":51,"bc":116}}
+{"t":"fen","d":{"fen":"r1b2rk1/pp2ppbp/6p1/4P3/6PN/2B1Q2P/PPP2PBq/2KR4 b - - 3 22","lm":"e2e3","wc":49,"bc":116}}
+{"t":"fen","d":{"fen":"r4rk1/pp2ppbp/6p1/4P3/6bN/2B1Q2P/PPP2PBq/2KR4 w - - 0 23","lm":"c8g4","wc":49,"bc":74}}
+{"t":"fen","d":{"fen":"r4rk1/pp2ppbp/6p1/4P3/6bN/2B1Q2P/PPP2PBq/2K4R b - - 1 23","lm":"d1h1","wc":42,"bc":74}}
+{"t":"fen","d":{"fen":"r4rk1/pp2ppbp/6p1/4P3/6bN/2B1Q2P/PPP2PB1/2K4q w - - 0 24","lm":"h2h1","wc":42,"bc":73}}
+{"t":"fen","d":{"fen":"r4rk1/pp2ppbp/6p1/4P3/6bN/2B1Q2P/PPP2P2/2K4B b - - 0 24","lm":"g2h1","wc":41,"bc":73}}
+{"t":"fen","d":{"fen":"r4rk1/pp2ppbp/4b1p1/4P3/7N/2B1Q2P/PPP2P2/2K4B w - - 1 25","lm":"g4e6","wc":41,"bc":73}}
+{"t":"fen","d":{"fen":"r4rk1/pB2ppbp/4b1p1/4P3/7N/2B1Q2P/PPP2P2/2K5 b - - 0 25","lm":"h1b7","wc":38,"bc":73}}
+{"t":"fen","d":{"fen":"1r3rk1/pB2ppbp/4b1p1/4P3/7N/2B1Q2P/PPP2P2/2K5 w - - 1 26","lm":"a8b8","wc":38,"bc":71}}
+{"t":"fen","d":{"fen":"1r3rk1/p3ppbp/4b1p1/4P3/4B2N/2B1Q2P/PPP2P2/2K5 b - - 2 26","lm":"b7e4","wc":37,"bc":71}}
+{"t":"fen","d":{"fen":"1rr3k1/p3ppbp/4b1p1/4P3/4B2N/2B1Q2P/PPP2P2/2K5 w - - 3 27","lm":"f8c8","wc":37,"bc":65}}

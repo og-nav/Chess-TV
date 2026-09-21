@@ -1,0 +1,260 @@
+{
+ "nbPlayers": 135,
+ "duels": [
+  {
+   "id": "1bkVTDgw",
+   "p": [
+    {
+     "n": "joserivas",
+     "r": 2350,
+     "k": 2
+    },
+    {
+     "n": "CRUYFFORD_ChesYT",
+     "r": 2523,
+     "k": 4
+    }
+   ]
+  },
+  {
+   "id": "rOBTnGVp",
+   "p": [
+    {
+     "n": "N_jefe-2700",
+     "r": 2199,
+     "k": 102
+    },
+    {
+     "n": "chess960freestyle",
+     "r": 2312,
+     "k": 105
+    }
+   ]
+  },
+  {
+   "id": "KKxjWju6",
+   "p": [
+    {
+     "n": "Antisistema",
+     "r": 1982,
+     "k": 47
+    },
+    {
+     "n": "Prathmesh0555",
+     "r": 2493,
+     "k": 39
+    }
+   ]
+  },
+  {
+   "id": "S2LysTuS",
+   "p": [
+    {
+     "n": "pan4",
+     "r": 2164,
+     "k": 14
+    },
+    {
+     "n": "ruylopezxindian",
+     "r": 2200,
+     "k": 4
+    }
+   ]
+  },
+  {
+   "id": "F2V39fV0",
+   "p": [
+    {
+     "n": "minanasssser",
+     "r": 2323,
+     "k": 21
+    },
+    {
+     "n": "Guyanabeast",
+     "r": 2011,
+     "k": 19
+    }
+   ]
+  },
+  {
+   "id": "BcUVaVHf",
+   "p": [
+    {
+     "n": "Siliwangi-MCS",
+     "r": 2032,
+     "k": 15
+    },
+    {
+     "n": "Daniel-07",
+     "r": 2271,
+     "k": 2
+    }
+   ]
+  }
+ ],
+ "secondsToFinish": 824,
+ "isStarted": true,
+ "featured": {
+  "id": "1bkVTDgw",
+  "fen": "2r1r1k1/pp3ppp/2pb4/8/q2P4/P3PN2/2QBP1PP/R2K1B1R b",
+  "orientation": "black",
+  "color": "black",
+  "lastMove": "d3c2",
+  "white": {
+   "name": "joserivas",
+   "id": "joserivas",
+   "rank": 2,
+   "rating": 2350
+  },
+  "black": {
+   "name": "CRUYFFORD_ChesYT",
+   "flair": "symbols.double-exclamation-mark",
+   "id": "cruyfford_chesyt",
+   "rank": 5,
+   "rating": 2523
+  },
+  "c": {
+   "white": 38,
+   "black": 30
+  }
+ },
+ "standing": {
+  "page": 1,
+  "players": [
+   {
+    "name": "Matanzas67",
+    "title": "IM",
+    "rank": 1,
+    "rating": 2532,
+    "score": 20,
+    "sheet": {
+     "scores": "444422",
+     "fire": true
+    }
+   },
+   {
+    "name": "joserivas",
+    "rank": 2,
+    "rating": 2350,
+    "score": 16,
+    "sheet": {
+     "scores": "44422",
+     "fire": true
+    }
+   },
+   {
+    "name": "Daniel-07",
+    "rank": 3,
+    "rating": 2271,
+    "score": 13,
+    "sheet": {
+     "scores": "4432",
+     "fire": true
+    }
+   },
+   {
+    "name": "ruylopezxindian",
+    "rank": 4,
+    "rating": 2200,
+    "score": 13,
+    "sheet": {
+     "scores": "230422",
+     "fire": true
+    }
+   },
+   {
+    "name": "CRUYFFORD_ChesYT",
+    "flair": "symbols.double-exclamation-mark",
+    "rank": 5,
+    "rating": 2523,
+    "score": 13,
+    "sheet": {
+     "scores": "53302",
+     "fire": true
+    }
+   },
+   {
+    "name": "LaiTB",
+    "rank": 6,
+    "rating": 2159,
+    "score": 12,
+    "sheet": {
+     "scores": "04422"
+    }
+   },
+   {
+    "name": "Badmannelly",
+    "rank": 7,
+    "rating": 2200,
+    "score": 12,
+    "sheet": {
+     "scores": "44220",
+     "fire": true
+    }
+   },
+   {
+    "name": "ImadAliraqi",
+    "rank": 8,
+    "rating": 2016,
+    "score": 12,
+    "sheet": {
+     "scores": "44220",
+     "fire": true
+    }
+   },
+   {
+    "name": "AkbasYunus",
+    "rank": 9,
+    "rating": 2138,
+    "score": 11,
+    "withdraw": true,
+    "sheet": {
+     "scores": "204320"
+    }
+   },
+   {
+    "name": "Porrio08",
+    "rank": 10,
+    "rating": 2061,
+    "score": 10,
+    "sheet": {
+     "scores": "042202"
+    }
+   }
+  ]
+ },
+ "id": "MHVqmH8B",
+ "createdBy": "lichess",
+ "startsAt": "2026-09-18T02:30:20Z",
+ "system": "arena",
+ "fullName": "Hourly Bullet Arena",
+ "minutes": 27,
+ "perf": {
+  "key": "bullet",
+  "name": "Bullet",
+  "icon": "T"
+ },
+ "clock": {
+  "limit": 60,
+  "increment": 0
+ },
+ "variant": "standard",
+ "rated": true,
+ "berserkable": true,
+ "verdicts": {
+  "list": [
+   {
+    "condition": "≥ 20 rated Bullet games",
+    "verdict": "ok"
+   }
+  ],
+  "accepted": true
+ },
+ "schedule": {
+  "freq": "hourly",
+  "speed": "bullet"
+ },
+ "minRatedGames": {
+  "nb": 20
+ }
+}

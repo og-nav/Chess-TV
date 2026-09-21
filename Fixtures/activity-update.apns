@@ -1,0 +1,24 @@
+{
+  "Simulator Target Bundle": "com.navin.chesstv",
+  "aps": {
+    "timestamp": 1789828325,
+    "event": "update",
+    "content-state": {
+      "fen": "r1b2rk1/pp2ppbp/6p1/4P3/6PN/2B4P/PPP1QPB1/2KR3q b - - 1 21",
+      "lastMove": "f1g2",
+      "san": "Bg2",
+      "ply": 41,
+      "whiteClock": 4812,
+      "blackClock": 4455,
+      "clockRunningFor": "black",
+      "status": "*",
+      "asOf": 811521125.0
+    },
+    "alert": {
+      "title": "Carlsen played 21. Bg2",
+      "body": "Tata Steel Masters · Round 5"
+    },
+    "relevance-score": 100,
+    "stale-date": 1789829225
+  }
+}

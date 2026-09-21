@@ -1,0 +1,28 @@
+{
+  "Simulator Target Bundle": "com.navin.chesstv",
+  "aps": {
+    "alert": {
+      "title": "Tata Steel Masters has finished",
+      "body": "Leading: Carlsen 9½, Firouzja 9, Abdusattorov 8½"
+    },
+    "category": "TOURNAMENT_EVENT",
+    "thread-id": "kPvMVqBp",
+    "mutable-content": 1,
+    "relevance-score": 0.5,
+    "sound": "default"
+  },
+  "d": {
+    "kind": "tournamentFinished",
+    "tourId": "tata-steel-masters-2026",
+    "tourName": "Tata Steel Masters",
+    "roundId": "kPvMVqBp",
+    "roundName": "Round 13",
+    "leaders": [
+      "Carlsen 9½",
+      "Firouzja 9",
+      "Abdusattorov 8½"
+    ],
+    "bannerURL": "https://image.lichess1.org/display?h=400&op=thumbnail&path=relay:tata-steel-masters-2026:banner.jpg",
+    "sentAt": "2026-09-27T14:32:05Z"
+  }
+}
