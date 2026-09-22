@@ -71,8 +71,12 @@ struct HistoryBoundaryDetector: Sendable {
     mutating func classify(_ event: TVEvent, at now: ContinuousClock.Instant = .now) -> Bool {
         defer { lastEventAt = now }
 
-        // The featured header describes the game, not a ply, so it is never history — but it
-        // does start the clock for the burst that follows it.
+        // A game featured at its starting position has no replay to wait for. Otherwise a
+        // fast opening (or a very short game) could remain classified as history until it ends.
+        if case .featured(_, _, _, let fen) = event {
+            if let liveKey, Self.key(fen) == liveKey { inBurst = false }
+            return false
+        }
         guard case .fen(let fen, _, _, _) = event else { return false }
         guard inBurst else { return false }
 

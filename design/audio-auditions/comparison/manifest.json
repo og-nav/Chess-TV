@@ -1,0 +1,92 @@
+{
+  "wood/move": {
+    "duration": 0.112,
+    "source": "Apps/ChessTV/Resources/Sounds/move.wav",
+    "filter": "anull"
+  },
+  "wood/capture": {
+    "duration": 0.216,
+    "source": "Apps/ChessTV/Resources/Sounds/capture.wav",
+    "filter": "anull"
+  },
+  "wood/check": {
+    "duration": 0.217,
+    "source": "Apps/ChessTV/Resources/Sounds/check.wav",
+    "filter": "anull"
+  },
+  "muted/move": {
+    "duration": 0.124,
+    "source": "Apps/ChessTV/Resources/Sounds/move.wav",
+    "filter": "asetrate=39690,aresample=44100,lowpass=f=1800"
+  },
+  "muted/capture": {
+    "duration": 0.24,
+    "source": "Apps/ChessTV/Resources/Sounds/capture.wav",
+    "filter": "asetrate=39690,aresample=44100,lowpass=f=1800"
+  },
+  "muted/check": {
+    "duration": 0.241,
+    "source": "Apps/ChessTV/Resources/Sounds/check.wav",
+    "filter": "asetrate=39690,aresample=44100,lowpass=f=1800"
+  },
+  "felt/move": {
+    "duration": 0.12,
+    "source": "design/audio-auditions/B-felt/move.wav",
+    "filter": "anull"
+  },
+  "felt/capture": {
+    "duration": 0.17,
+    "source": "design/audio-auditions/B-felt/capture.wav",
+    "filter": "anull"
+  },
+  "felt/check": {
+    "duration": 0.28,
+    "source": "design/audio-auditions/B-felt/check.wav",
+    "filter": "anull"
+  },
+  "piano/move": {
+    "duration": 0.131,
+    "source": "design/audio-auditions/sources/lichess/piano/Move.mp3",
+    "filter": "anull"
+  },
+  "piano/capture": {
+    "duration": 0.186,
+    "source": "design/audio-auditions/sources/lichess/piano/Capture.mp3",
+    "filter": "anull"
+  },
+  "piano/check": {
+    "duration": 0.544,
+    "source": "design/audio-auditions/sources/lichess/piano/Check.mp3",
+    "filter": "anull"
+  },
+  "nes/move": {
+    "duration": 0.138,
+    "source": "design/audio-auditions/sources/lichess/nes/Move.mp3",
+    "filter": "anull"
+  },
+  "nes/capture": {
+    "duration": 0.18,
+    "source": "design/audio-auditions/sources/lichess/nes/Capture.mp3",
+    "filter": "anull"
+  },
+  "nes/check": {
+    "duration": 0.227,
+    "source": "design/audio-auditions/sources/lichess/nes/Check.mp3",
+    "filter": "anull"
+  },
+  "sfx/move": {
+    "duration": 0.209,
+    "source": "design/audio-auditions/sources/lichess/sfx/Move.mp3",
+    "filter": "anull"
+  },
+  "sfx/capture": {
+    "duration": 0.382,
+    "source": "design/audio-auditions/sources/lichess/sfx/Capture.mp3",
+    "filter": "anull"
+  },
+  "sfx/check": {
+    "duration": 0.546,
+    "source": "design/audio-auditions/sources/lichess/sfx/Check.mp3",
+    "filter": "anull"
+  }
+}

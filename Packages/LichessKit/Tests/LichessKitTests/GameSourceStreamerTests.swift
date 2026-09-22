@@ -86,7 +86,8 @@ struct GameSourceStreamerTests {
         }
         defer { server.stop() }
 
-        let streamer = GameSourceStreamer(baseURL: server.baseURL, configuration: BroadcastPGNStreamTests.fastConfiguration())
+        let streamer = GameSourceStreamer(baseURL: server.baseURL, configuration: BroadcastPGNStreamTests.fastConfiguration(),
+                                          gameSwitchGrace: .milliseconds(100))
         defer { streamer.finish() }
 
         let events = await collect(streamer.sourcedEvents(for: .tvChannel(.blitz)), for: .seconds(2)).map(\.item)
@@ -269,6 +270,55 @@ struct GameSourceStreamerTests {
 
     // MARK: - Broadcast board: PGN, then polling
 
+    @Test("A channel promotion drains the old game's delayed final move and result before switching")
+    func promotionBeforeFinalMove() async throws {
+        let server = try LoopbackHTTPServer { path, _ in
+            switch path {
+            case "/api/tv/blitz/feed":
+                return .init(chunks: [
+                    Data(Self.featuredLine(id: "AAAA", fen: Self.afterE4).utf8),
+                    Data(Self.featuredLine(id: "BBBB", fen: Self.afterD4).utf8),
+                ], chunkDelay: 0.15, ending: .hold)
+            case "/api/stream/game/AAAA":
+                return .init(chunks: [
+                    Data((Self.gameMetadata(id: "AAAA") + Self.gameMove(fen: Self.afterE4, lastMove: "e2e4")).utf8),
+                    Data((Self.gameMove(fen: Self.afterE5, lastMove: "e7e5") + Self.gameOver(id: "AAAA", fen: Self.afterE5)).utf8),
+                ], chunkDelay: 0.35, ending: .graceful)
+            case "/api/stream/game/BBBB":
+                return .init(chunks: [Data((Self.gameMetadata(id: "BBBB")
+                    + Self.gameMove(fen: Self.afterD4, lastMove: "d2d4")).utf8)], chunkDelay: 0, ending: .hold)
+            default:
+                return .init(statusCode: 404, ending: .graceful)
+            }
+        }
+        defer { server.stop() }
+        let streamer = GameSourceStreamer(baseURL: server.baseURL,
+            configuration: BroadcastPGNStreamTests.fastConfiguration(), gameOverHold: .milliseconds(100))
+        defer { streamer.finish() }
+        let items = await collect(streamer.sourcedEvents(for: .tvChannel(.blitz)), for: .seconds(1)).map(\.item)
+        let lastMove = try #require(items.firstIndex { if case .fen(_, "e7e5", _, _) = $0.event { true } else { false } })
+        let result = try #require(items.firstIndex { if case .gameEnded(gameId: "AAAA", status: _) = $0 { true } else { false } })
+        let next = try #require(items.firstIndex { if case .featured("BBBB", _, _, _) = $0.event { true } else { false } })
+        #expect(lastMove < result && result < next)
+        #expect(items[lastMove].sourced?.isHistorical == false)
+    }
+
+    @Test("Closing metadata preserves a final position missing from the move lines")
+    func closingPosition() async throws {
+        let server = try LoopbackHTTPServer(steps: [.init(chunks: [Data((
+            Self.gameMetadata(id: "AAAA") + Self.gameMove(fen: Self.afterE4, lastMove: "e2e4")
+                + Self.gameOver(id: "AAAA", fen: Self.afterE5)
+        ).utf8)], chunkDelay: 0, ending: .graceful)])
+        defer { server.stop() }
+        let stream = GameStream(baseURL: server.baseURL)
+        defer { stream.finish() }
+        var events: [SourcedEvent] = []
+        for try await event in stream.sourcedEvents(gameId: "AAAA", liveFen: Self.afterE4) { events.append(event) }
+        #expect(events.last?.event == .fen(fen: Self.afterE5, lastMove: nil, whiteClock: nil, blackClock: nil))
+        #expect(events.last?.isHistorical == false)
+        #expect(stream.lastStatus?.name == "mate")
+    }
+
     private static func roundPayload(fen: String, status: String) -> Data {
         Data("""
         {"round":{"id":"R1","name":"Round 1","ongoing":true,"startsAt":1789683722400},
@@ -400,5 +450,16 @@ struct HistoryBoundaryDetectorTests {
         #expect(!featured)
         #expect(ply)
         #expect(!detector.isLive)
+    }
+
+    @Test("Featuring move zero makes a fast opening live immediately")
+    func startingPositionBoundary() {
+        var detector = HistoryBoundaryDetector(liveFen: Position.standard.fen)
+        let now = ContinuousClock.now
+        let featured = detector.classify(.featured(gameId: "A", orientation: .white, players: [], fen: Position.standard.fen), at: now)
+        #expect(!featured)
+        #expect(detector.isLive)
+        let move = detector.classify(fen("next position"), at: now)
+        #expect(!move)
     }
 }

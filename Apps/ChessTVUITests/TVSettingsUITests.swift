@@ -72,6 +72,36 @@ final class TVSettingsUITests: TVUITestCase {
 
     // MARK: - Toggles
 
+    func testSoundSetsSelectPreviewAndPersist() {
+        openSettings()
+        for (raw, name) in [("wood", "Recorded Wood"), ("muted", "Muted Wood"), ("felt", "Soft Felt"),
+                            ("piano", "Lichess Piano"), ("nes", "Lichess NES"), ("sfx", "Lichess SFX")] {
+            let button = app.buttons[UIID.Settings.soundSet(raw)]
+            steer(to: button)
+            press(.select)
+            XCTAssertTrue(waitUntil(6) { self.element(UIID.Settings.soundSet).label == name })
+            XCTAssertTrue(button.isSelected)
+        }
+        let preview = app.buttons[UIID.Settings.previewSound]
+        steer(to: preview)
+        press(.select)
+        press(.select) // Restarting a preview must leave Settings responsive.
+        let sounds = app.buttons[UIID.Settings.sounds]
+        steer(to: sounds)
+        if toggleValue(UIID.Settings.sounds) == "On" { press(.select) }
+        app.terminate()
+        launch(["-showSettings"], keepState: true)
+        waitFor(doneButton)
+        let chosen = app.buttons[UIID.Settings.soundSet("sfx")]
+        steer(to: chosen)
+        XCTAssertTrue(chosen.isSelected)
+        XCTAssertEqual(element(UIID.Settings.soundSet).label, "Lichess SFX")
+        steer(to: app.buttons[UIID.Settings.previewSound])
+        press(.select) // Preview is explicit and still available while game sounds are muted.
+        steer(to: app.buttons[UIID.Settings.sounds])
+        XCTAssertEqual(toggleValue(UIID.Settings.sounds), "Off")
+    }
+
     func testEveryToggleFlipsItsValue() {
         openSettings()
         let grid = app.buttons[TVFixture.toggleRows[0][0]]

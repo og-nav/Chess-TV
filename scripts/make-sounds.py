@@ -1,157 +1,68 @@
 #!/usr/bin/env python3
-"""Generates every sound the app plays, into Apps/ChessTV/Resources/Sounds/.
+"""Build the app's six sound sets plus the original shared game-over chime.
 
-    python3 scripts/make-sounds.py
-
-Four files, all original to this project — nothing sampled, recorded or copied from
-anywhere else. Each one is 44.1 kHz, 16-bit, mono PCM, synthesized from decaying
-sinusoids plus (for the taps) a pinch of resonator-filtered noise from a seeded
-generator, so the output is byte-for-byte reproducible on any machine with a Python 3
-standard library and nothing else:
-
-    move.wav     105 ms   the selected Wood audition: a dry, textured piece landing
-    capture.wav  ~125 ms   the same tap answered by a heavier, lower body
-    check.wav    ~250 ms   a two-note chime, A5 then D6, bright but not an alarm
-    gameover.wav  600 ms   a slower two-note chime an octave down, E5 then A5
-
-They are meant to carry across a living room on TV speakers and still sit politely in a
-phone's earpiece: short, dry, with a few milliseconds of fade at both ends so no file can
-start or stop on a step.
-
-Loudness: capture and check retain their original calibration against the previous move
-sound; the selected Wood move retains its audition level. The original trio was matched by the energy each one puts
-into a fixed 200 ms window, which tracks how loud a short sound actually seems far better
-than its peak does, then scaled together so the loudest peak lands at -3 dBFS. gameover
-keeps the peak normalization it was born with (-6 dBFS), so the file this script writes is
-identical to the one scripts/make-gameover-sound.py used to write.
+Requires ffmpeg on PATH. Sources and licensing: assets/audio/wooden-chess/README.md.
+Output: 44.1 kHz, 16-bit mono WAV. Check is a restrained double wooden tap.
+The game-over chime is preserved byte for byte from the original generator.
 """
+import argparse
+import base64
 import math
-import importlib.util
 import os
-import random
+from pathlib import Path
 import struct
+import subprocess
+import shutil
+import sys
 import wave
 
 RATE = 44_100
-
-OUTPUT_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "Apps", "ChessTV", "Resources", "Sounds",
-)
-
-# --- loudness -----------------------------------------------------------------------
-
-# The taps are matched on energy per 200 ms rather than on peak: a 5 ms transient that
-# peaks at 0 dBFS is far quieter to the ear than a 200 ms chime that does.
-LOUDNESS_WINDOW = 0.200
-PEAK_CEILING = 0.708             # -3 dBFS, the loudest peak allowed among the matched set
-# Long enough that no file can begin on a step, short enough that a tap still sounds
-# struck rather than faded up; raised-cosine, so even the slope starts at zero.
-FADE_IN = 0.0010
-FADE_OUT = 0.006                 # every file ramps to true silence before it ends
+ROOT = Path(__file__).resolve().parents[1]
+OUTPUT_DIR = ROOT / "Apps/ChessTV/Resources/Sounds"
+SOURCE_DIR = ROOT / "assets/audio/wooden-chess"
 
 
-def loudness(frames: list[float]) -> float:
-    """RMS over a fixed window, so a shorter sound reads as the quieter one."""
-    window = int(RATE * LOUDNESS_WINDOW)
-    energy = sum(value * value for value in frames[:window])
-    return math.sqrt(energy / window)
-
-
-# --- building blocks ----------------------------------------------------------------
-
-
-def partial(frames: list[float], start: float, frequency: float,
-            amplitude: float, decay: float, attack: float = 0.0008) -> None:
-    """Add one exponentially decaying sinusoid, in place."""
-    first = int(RATE * start)
-    step = 2 * math.pi * frequency / RATE
-    for index in range(first, len(frames)):
-        age = (index - first) / RATE
-        envelope = math.exp(-age / decay)
-        if envelope < 1e-4:
-            break
-        if attack > 0:
-            envelope *= min(1.0, age / attack)
-        frames[index] += amplitude * envelope * math.sin(step * (index - first))
-
-
-def click(frames: list[float], start: float, frequency: float,
-          amplitude: float, decay: float, resonance: float, seed: int) -> None:
-    """Add a short noise burst through a two-pole resonator: the knock of wood on wood.
-
-    The noise comes from a seeded Mersenne Twister, so the same bytes come out every run.
-    """
-    noise = random.Random(seed)
-    # Standard two-pole resonator: one pole pair at `frequency`, bandwidth set by `resonance`.
-    radius = math.exp(-math.pi * frequency / (resonance * RATE))
-    a1 = -2 * radius * math.cos(2 * math.pi * frequency / RATE)
-    a2 = radius * radius
-    gain = (1 - radius) * math.sqrt(1 - 2 * radius * math.cos(4 * math.pi * frequency / RATE) + a2)
-    first = int(RATE * start)
-    previous = second_previous = 0.0
-    for index in range(first, len(frames)):
-        age = (index - first) / RATE
-        envelope = math.exp(-age / decay)
-        if envelope < 1e-4:
-            break
-        sample = gain * (noise.random() * 2 - 1) - a1 * previous - a2 * second_previous
-        second_previous, previous = previous, sample
-        frames[index] += amplitude * envelope * sample
-
-
-def blank(duration: float) -> list[float]:
-    return [0.0] * int(RATE * duration)
-
-
-# --- the sounds ---------------------------------------------------------------------
-
-
-def make_move() -> list[float]:
-    """The exact Wood move audition selected by the owner."""
-    path = os.path.join(os.path.dirname(__file__), "make-sound-auditions.py")
-    spec = importlib.util.spec_from_file_location("sound_auditions", path)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module.finish(module.wooden()["move"])
-
-
-
-def _make_reference_move() -> list[float]:
-    """A knuckle-sized piece set down on a board: thump, faint click, gone."""
-    frames = blank(0.075)
-    # A slightly inharmonic stack is what keeps it wooden instead of a tuned beep.
-    partial(frames, 0.000, 207.0, 1.000, 0.0185)
-    partial(frames, 0.000, 421.0, 0.400, 0.0115)
-    partial(frames, 0.000, 806.0, 0.150, 0.0060)
-    click(frames, 0.000, 2_450.0, 0.170, 0.0035, resonance=1.6, seed=1)
+def recording(name: str) -> list[float]:
+    pcm = subprocess.run([
+        "ffmpeg", "-v", "error", "-i", str(SOURCE_DIR / name),
+        "-af", "highpass=f=65,lowpass=f=7000", "-ac", "1", "-ar", str(RATE),
+        "-f", "f32le", "pipe:1",
+    ], check=True, capture_output=True).stdout
+    frames = list(struct.unpack(f"<{len(pcm) // 4}f", pcm))
+    # Remove codec padding, retaining the natural decay and a short quiet tail.
+    threshold = max(map(abs, frames)) * 0.003
+    active = [i for i, sample in enumerate(frames) if abs(sample) > threshold]
+    first = max(0, active[0] - int(RATE * 0.002))
+    last = min(len(frames), active[-1] + int(RATE * 0.010))
+    frames = frames[first:last]
+    for i in range(min(len(frames), int(RATE * 0.001))):
+        frames[i] *= i / max(1, int(RATE * 0.001) - 1)
+    tail = min(len(frames), int(RATE * 0.008))
+    for i in range(tail):
+        frames[len(frames) - tail + i] *= (tail - 1 - i) / max(1, tail - 1)
     return frames
 
 
-def make_capture() -> list[float]:
-    """The same tap, with a second heavier one landing under it 35 ms later."""
-    frames = blank(0.125)
-    partial(frames, 0.000, 231.0, 0.780, 0.0150)
-    partial(frames, 0.000, 455.0, 0.320, 0.0095)
-    click(frames, 0.000, 2_650.0, 0.150, 0.0030, resonance=1.6, seed=2)
-    # The lower body: bigger piece, more wood, a longer ring.
-    partial(frames, 0.035, 138.0, 1.000, 0.0330)
-    partial(frames, 0.035, 279.0, 0.420, 0.0210)
-    partial(frames, 0.035, 534.0, 0.140, 0.0090)
-    click(frames, 0.035, 1_850.0, 0.130, 0.0045, resonance=1.4, seed=3)
-    return frames
+def balance(frames: list[float], target: float) -> list[float]:
+    # Match short-event energy, with ample peak headroom for TV speakers.
+    rms = math.sqrt(sum(x * x for x in frames) / (RATE * 0.2))
+    scale = min(target / rms, 10 ** (-6 / 20) / max(map(abs, frames)))
+    return [x * scale for x in frames]
 
 
-def make_check() -> list[float]:
-    """A5 then D6, a rising fourth: the same interval gameover uses, an octave up and
-    four times faster, so the two read as one family without being mistaken for each
-    other. Bell-ish partials and a soft attack keep it a chime, not a buzzer."""
-    frames = blank(0.250)
-    for start, frequency in ((0.000, 880.000), (0.085, 1_174.659)):
-        partial(frames, start, frequency, 1.000, 0.0720, attack=0.004)
-        partial(frames, start, frequency * 2, 0.190, 0.0450, attack=0.004)
-        partial(frames, start, frequency * 3, 0.055, 0.0260, attack=0.004)
-    return frames
+def wooden_sounds() -> dict[str, list[float]]:
+    move = recording("piece-placement.mp3")
+    capture = recording("piece-capture.mp3")
+    offset = int(RATE * 0.105)
+    check = [0.0] * (offset + len(move))
+    for i, sample in enumerate(move):
+        check[i] += sample
+        check[offset + i] += sample * 0.40
+    return {
+        "move.wav": balance(move, 0.045),
+        "capture.wav": balance(capture, 0.055),
+        "check.wav": balance(check, 0.050),
+    }
 
 
 # gameover keeps its own numbers, verbatim from the script it replaces.
@@ -195,19 +106,6 @@ def make_gameover() -> list[float]:
     return [value * GAMEOVER_PEAK / loudest for value in frames]
 
 
-# --- writing --------------------------------------------------------------------------
-
-
-def fade_edges(frames: list[float]) -> None:
-    count = len(frames)
-    head = int(RATE * FADE_IN)
-    for index in range(min(head, count)):
-        frames[index] *= 0.5 - 0.5 * math.cos(math.pi * index / max(1, head - 1))
-    tail = int(RATE * FADE_OUT)
-    for index in range(max(0, count - tail), count):
-        frames[index] *= (count - 1 - index) / max(1, tail - 1)
-
-
 def write(name: str, frames: list[float]) -> tuple[str, float, float]:
     packed = b"".join(
         struct.pack("<h", max(-32_768, min(32_767, int(round(value * 32_767)))))
@@ -225,31 +123,58 @@ def write(name: str, frames: list[float]) -> tuple[str, float, float]:
 
 
 def main() -> None:
-    # Keep the original calibration sound here so capture/check retain their exact bytes.
-    matched = {"move.wav": _make_reference_move(), "capture.wav": make_capture(), "check.wav": make_check()}
-    for frames in matched.values():
-        fade_edges(frames)
-    # One scale for all three: match them to the loudest of the set, then pull the group
-    # down until its highest peak sits at the ceiling. Relative balance survives both steps.
-    reference = max(loudness(frames) for frames in matched.values())
-    for frames in matched.values():
-        scale = reference / (loudness(frames) or 1.0)
-        for index, value in enumerate(frames):
-            frames[index] = value * scale
-    headroom = PEAK_CEILING / max(max(abs(value) for value in frames) for frames in matched.values())
-    for frames in matched.values():
-        for index, value in enumerate(frames):
-            frames[index] = value * headroom
-
-    # gameover is left out of both the fades and the loudness match: it carries its own
-    # 8 ms ramp to silence and its own peak normalization, and this file has to come out
-    # exactly as it did before.
-    everything = dict(matched)
-    everything["move.wav"] = make_move()
-    everything["gameover.wav"] = make_gameover()
-    for name, frames in everything.items():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--preview", action="store_true", help="Also write a listening preview under design/audio-auditions")
+    args = parser.parse_args()
+    sounds = wooden_sounds()
+    sounds["gameover.wav"] = make_gameover()
+    for name, frames in sounds.items():
         path, seconds, peak_db = write(name, frames)
         print(f"wrote {path} ({seconds * 1000:.0f} ms, peak {peak_db:+.1f} dBFS)")
+    # The gallery is also the single recipe for the six auditioned, level-matched sets.
+    # Unique flat names survive Xcode's resource copying on both iOS and tvOS.
+    subprocess.run([sys.executable, str(ROOT / "scripts/make-sound-gallery.py")], check=True)
+    for source in sorted((ROOT / "design/audio-auditions/comparison").glob("*/*.wav")):
+        shutil.copyfile(source, OUTPUT_DIR / f"sound-{source.parent.name}-{source.name}")
+    licences = ROOT / "assets/Licenses"
+    original = ROOT / "design/audio-auditions/sources/lichess"
+    shutil.copyfile(original / "LICENSE", licences / "AGPL-3.0.txt")
+    shutil.copyfile(original / "COPYING.md", licences / "Lichess-Sounds-COPYING.txt")
+    if args.preview:
+        preview = ROOT / "design/audio-auditions"
+        preview.mkdir(parents=True, exist_ok=True)
+        sequence = [(0.35, "move.wav"), (1.5, "capture.wav"), (2.7, "check.wav")]
+        sequence += [(4.0 + i * 0.6, "move.wav") for i in range(6)]
+        frames = [0.0] * (RATE * 8)
+        for start, name in sequence:
+            for i, sample in enumerate(sounds[name]):
+                frames[int(start * RATE) + i] += sample
+        with wave.open(str(preview / "recorded-wood-preview.wav"), "wb") as output:
+            output.setparams((1, 2, RATE, 0, "NONE", "not compressed"))
+            output.writeframes(b"".join(struct.pack("<h", round(x * 32767)) for x in frames))
+        cards = []
+        for name, description in [
+            ("move", "A single wooden piece landing."),
+            ("capture", "A fuller wooden capture."),
+            ("check", "A landing followed by a quieter wooden tap."),
+        ]:
+            encoded = base64.b64encode((OUTPUT_DIR / f"{name}.wav").read_bytes()).decode()
+            cards.append(f'<article><h2>{name.title()}</h2><p>{description}</p>'
+                         f'<audio controls preload="auto" src="data:audio/wav;base64,{encoded}"></audio></article>')
+        html = '''<!doctype html><html lang="en"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chess TV · Wooden sounds</title><style>
+body{margin:48px auto;padding:0 24px;max-width:760px;background:#151914;color:#eeeae0;font:17px/1.55 system-ui}
+h1{font-size:38px;line-height:1.1}h2{margin:0 0 8px;font-size:22px}p{color:#b8bdb1}
+article{padding:24px;background:#232a20;border:1px solid #46503e;border-radius:16px;margin:16px 0}
+audio{width:100%;margin:8px 0}a{color:#cbd7a6}small{color:#b8bdb1}</style>
+<h1>Wooden chess sounds</h1><p>Real chess-piece recordings, balanced for repeated listening.</p>
+''' + "".join(cards) + '''<article><h2>Sequence &amp; repetition</h2>
+<p>Move → capture → check → six ordinary moves.</p>
+<audio controls src="recorded-wood-preview.wav"></audio></article>
+<small>Recordings by <a href="https://freesound.org/people/el_boss/packs/30764/">el_boss</a>, CC0.
+Trimmed, filtered, and balanced for Chess TV. Check adds a quieter second tap. Game-over chime is unchanged.</small></html>'''
+        (preview / "recorded-wood.html").write_text(html)
 
 
 if __name__ == "__main__":

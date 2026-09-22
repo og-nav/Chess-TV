@@ -1,0 +1,42 @@
+{
+  "repository": "https://github.com/lichess-org/lila",
+  "commit": "a08067128f5284d5128f17783a786ab5fe94e0d0",
+  "files": {
+    "piano/Move.mp3": {
+      "url": "https://raw.githubusercontent.com/lichess-org/lila/a08067128f5284d5128f17783a786ab5fe94e0d0/public/sound/piano/Move.mp3",
+      "sha256": "2c681c2638ddaf4e18deebc36e5a2ee481c69ef6c6435597e672b73c5c078715"
+    },
+    "piano/Capture.mp3": {
+      "url": "https://raw.githubusercontent.com/lichess-org/lila/a08067128f5284d5128f17783a786ab5fe94e0d0/public/sound/piano/Capture.mp3",
+      "sha256": "3fe6ce347463fe2e1f31bdbcd936945b3e550c97569ac8d5e6b7ac3487a5f244"
+    },
+    "piano/Check.mp3": {
+      "url": "https://raw.githubusercontent.com/lichess-org/lila/a08067128f5284d5128f17783a786ab5fe94e0d0/public/sound/piano/Check.mp3",
+      "sha256": "5f92c1c4b0e0d2af07de5d4b00702b16a4e77f83d4577cfce0d655b5acc1ccd0"
+    },
+    "nes/Move.mp3": {
+      "url": "https://raw.githubusercontent.com/lichess-org/lila/a08067128f5284d5128f17783a786ab5fe94e0d0/public/sound/nes/Move.mp3",
+      "sha256": "dd2537a1fe4e769cf81f2243a886869cecc747c03fc74302c26e82d1d30444f0"
+    },
+    "nes/Capture.mp3": {
+      "url": "https://raw.githubusercontent.com/lichess-org/lila/a08067128f5284d5128f17783a786ab5fe94e0d0/public/sound/nes/Capture.mp3",
+      "sha256": "db0fee5a96c0638548e2f2522dce6541ca0e6a3cf75b50e0092817d9e00ecbb9"
+    },
+    "nes/Check.mp3": {
+      "url": "https://raw.githubusercontent.com/lichess-org/lila/a08067128f5284d5128f17783a786ab5fe94e0d0/public/sound/nes/Check.mp3",
+      "sha256": "0d7f8760ffafa45baf1a7e9deafa398bf3aedbe76ab5bd0dbf03055c2697d6ef"
+    },
+    "sfx/Move.mp3": {
+      "url": "https://raw.githubusercontent.com/lichess-org/lila/a08067128f5284d5128f17783a786ab5fe94e0d0/public/sound/sfx/Move.mp3",
+      "sha256": "0b4bbf4b0bc0cd937f9661820da4f6e9c5b821913a32502d3b571e6730f7c984"
+    },
+    "sfx/Capture.mp3": {
+      "url": "https://raw.githubusercontent.com/lichess-org/lila/a08067128f5284d5128f17783a786ab5fe94e0d0/public/sound/sfx/Capture.mp3",
+      "sha256": "59b9de82710ea30968312902bf7ac8334a1da620ee364e231ef9454f8648f2d2"
+    },
+    "sfx/Check.mp3": {
+      "url": "https://raw.githubusercontent.com/lichess-org/lila/a08067128f5284d5128f17783a786ab5fe94e0d0/public/sound/sfx/Check.mp3",
+      "sha256": "efaa7ae9a88025b6678de680441d806ce55e1a49f9009305235c5cd63a226093"
+    }
+  }
+}

@@ -20,7 +20,7 @@ enum Credits {
 
     /// A licence text carried in the app bundle, shown on its own scrollable screen.
     enum Licence: String, CaseIterable, Identifiable, Sendable {
-        case gpl3, gpl2, apache2
+        case gpl3, gpl2, apache2, agpl3
 
         public var id: String { rawValue }
 
@@ -30,6 +30,7 @@ enum Credits {
             case .gpl3: "GNU General Public License, version 3"
             case .gpl2: "GNU General Public License, version 2"
             case .apache2: "Apache License, version 2.0"
+            case .agpl3: "GNU Affero General Public License, version 3"
             }
         }
 
@@ -39,6 +40,7 @@ enum Credits {
             case .gpl3: "GPLv3"
             case .gpl2: "GPLv2"
             case .apache2: "Apache 2.0"
+            case .agpl3: "AGPLv3"
             }
         }
 
@@ -47,6 +49,7 @@ enum Credits {
             case .gpl3: "GPL-3.0"
             case .gpl2: "GPL-2.0"
             case .apache2: "Apache-2.0"
+            case .agpl3: "AGPL-3.0"
             }
         }
 
@@ -70,6 +73,7 @@ enum Credits {
             case .gpl3: "https://www.gnu.org/licenses/gpl-3.0.html"
             case .gpl2: "https://www.gnu.org/licenses/old-licenses/gpl-2.0.html"
             case .apache2: "https://www.apache.org/licenses/LICENSE-2.0"
+            case .agpl3: "https://www.gnu.org/licenses/agpl-3.0.html"
             }
         }
     }
@@ -170,7 +174,16 @@ enum Credits {
         Entry(
             id: "sounds",
             title: "Sounds",
-            lines: ["Sounds made for Chess TV."]
+            lines: [
+                "Wooden chess sounds by el_boss on Freesound, released under CC0 1.0.",
+                "Adapted from Piece Placement (546119) and Piece Capture (546120).",
+                "Soft Felt and the game-over chime were made for Chess TV.",
+                "Lichess Piano, NES and SFX by Enigmahack and the Lichess authors, released under AGPLv3 or later.",
+                "Adapted by Chess TV with matched levels and WAV conversion; Muted Wood also lowers pitch and filters the high frequencies.",
+                "Original recordings and processing scripts are included in the app's source at \(sourceURL).",
+            ],
+            link: "https://github.com/lichess-org/lila/tree/master/public/sound",
+            licences: [.agpl3]
         ),
         Entry(
             id: "thanks",

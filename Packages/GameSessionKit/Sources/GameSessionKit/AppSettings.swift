@@ -43,6 +43,7 @@ public final class AppSettings {
         public static let pieceSet = "pieceSet"
         public static let coordinates = "coordinates"
         public static let sounds = "sounds"
+        public static let soundSet = "soundSet"
         public static let engineEnabled = "engineEnabled"
         public static let engineDepth = "engineDepth"
         public static let followFeaturedPlayer = "followFeaturedPlayer"
@@ -61,6 +62,7 @@ public final class AppSettings {
     public var pieceSet: PieceSet { didSet { defaults.set(pieceSet.rawValue, forKey: Key.pieceSet) } }
     public var coordinates: Bool { didSet { defaults.set(coordinates, forKey: Key.coordinates) } }
     public var sounds: Bool { didSet { defaults.set(sounds, forKey: Key.sounds) } }
+    public var soundSet: SoundSet { didSet { defaults.set(soundSet.rawValue, forKey: Key.soundSet) } }
     public var engineEnabled: Bool { didSet { defaults.set(engineEnabled, forKey: Key.engineEnabled) } }
     /// How hard the engine works on each position. See `EngineDepth`.
     public var engineDepth: EngineDepth { didSet { defaults.set(engineDepth.rawValue, forKey: Key.engineDepth) } }
@@ -90,6 +92,7 @@ public final class AppSettings {
             Key.pieceSet: PieceSet.cburnett.rawValue,
             Key.coordinates: true,
             Key.sounds: true,
+            Key.soundSet: SoundSet.recordedWood.rawValue,
             Key.engineEnabled: true,
             Key.engineDepth: defaultEngineDepth.rawValue,
             Key.followFeaturedPlayer: false,
@@ -102,6 +105,7 @@ public final class AppSettings {
         pieceSet = PieceSet(rawValue: defaults.string(forKey: Key.pieceSet) ?? "") ?? .cburnett
         coordinates = defaults.bool(forKey: Key.coordinates)
         sounds = defaults.bool(forKey: Key.sounds)
+        soundSet = SoundSet(rawValue: defaults.string(forKey: Key.soundSet) ?? "") ?? .recordedWood
         engineEnabled = defaults.bool(forKey: Key.engineEnabled)
         engineDepth = EngineDepth(rawValue: defaults.string(forKey: Key.engineDepth) ?? "") ?? .standard
         followFeaturedPlayer = defaults.bool(forKey: Key.followFeaturedPlayer)

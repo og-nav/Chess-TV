@@ -74,6 +74,11 @@ public final class GameSourceStreamer: @unchecked Sendable {   // @unchecked: mu
     private var forwarding: Task<Void, Never>?
     private var preferPolling: Bool
     private let hold: Duration
+    private let switchGrace: Duration
+
+    /// Allow a delayed game's final moves/result to arrive when the channel promotes its
+    /// successor. A channel can also switch away from an ongoing game, so this wait is bounded.
+    public static let gameSwitchGrace: Duration = .seconds(3)
 
     /// How long a finished game stays on screen before the next one starts arriving.
     ///
@@ -98,7 +103,8 @@ public final class GameSourceStreamer: @unchecked Sendable {   // @unchecked: mu
         games: GameStream = GameStream(),
         broadcastPGN: BroadcastPGNStream = BroadcastPGNStream(),
         preferPollingForBroadcasts: Bool = false,
-        gameOverHold: Duration = GameSourceStreamer.gameOverHold
+        gameOverHold: Duration = GameSourceStreamer.gameOverHold,
+        gameSwitchGrace: Duration = GameSourceStreamer.gameSwitchGrace
     ) {
         self.tvFeed = tvFeed
         self.arenaFeatured = arenaFeatured
@@ -107,6 +113,7 @@ public final class GameSourceStreamer: @unchecked Sendable {   // @unchecked: mu
         self.broadcastPGN = broadcastPGN
         self.preferPolling = preferPollingForBroadcasts
         self.hold = gameOverHold
+        self.switchGrace = gameSwitchGrace
     }
 
     /// Convenience initialiser pointing every underlying client at one base URL.
@@ -114,7 +121,8 @@ public final class GameSourceStreamer: @unchecked Sendable {   // @unchecked: mu
         baseURL: URL,
         configuration: TVFeedStream.Configuration = TVFeedStream.Configuration(),
         preferPollingForBroadcasts: Bool = false,
-        gameOverHold: Duration = GameSourceStreamer.gameOverHold
+        gameOverHold: Duration = GameSourceStreamer.gameOverHold,
+        gameSwitchGrace: Duration = GameSourceStreamer.gameSwitchGrace
     ) {
         self.init(
             tvFeed: TVFeedStream(baseURL: baseURL, configuration: configuration),
@@ -123,7 +131,8 @@ public final class GameSourceStreamer: @unchecked Sendable {   // @unchecked: mu
             games: GameStream(baseURL: baseURL, configuration: configuration),
             broadcastPGN: BroadcastPGNStream(baseURL: baseURL, configuration: configuration),
             preferPollingForBroadcasts: preferPollingForBroadcasts,
-            gameOverHold: gameOverHold
+            gameOverHold: gameOverHold,
+            gameSwitchGrace: gameSwitchGrace
         )
     }
 
@@ -197,7 +206,7 @@ public final class GameSourceStreamer: @unchecked Sendable {   // @unchecked: mu
     ///
     /// Only `.featured` matters here: the feed's own `.fen` events are dropped, because the game
     /// stream carries the same moves *plus* everything that came before them. A new featured id
-    /// cancels the game in flight and starts the next one, whose own history is emitted first.
+    /// gives the game in flight a bounded grace period to finish before starting the next one.
     private func runTVChannel(
         channel: TVChannel,
         continuation: AsyncThrowingStream<FeedItem, Error>.Continuation
@@ -211,6 +220,8 @@ public final class GameSourceStreamer: @unchecked Sendable {   // @unchecked: mu
             for try await event in tvFeed.events(for: channel) {
                 guard case .featured(let gameId, _, _, let liveFen) = event else { continue }
                 guard gameId != currentId else { continue }
+                if let gameTask { await drainEnding(of: gameTask) }
+                try Task.checkCancellation()
                 log.info("TV channel \(channel.rawValue, privacy: .public) featured game is now \(gameId, privacy: .public)")
                 currentId = gameId
                 gameTask?.cancel()
@@ -236,6 +247,19 @@ public final class GameSourceStreamer: @unchecked Sendable {   // @unchecked: mu
         } catch {
             guard !Task.isCancelled, !error.isCancellation else { return }
             continuation.finish(throwing: error)
+        }
+    }
+
+    private func drainEnding(of gameTask: Task<Void, Never>) async {
+        let timeout = Task { [switchGrace] in
+            do { try await Task.sleep(for: switchGrace) } catch { return }
+            gameTask.cancel()
+        }
+        defer { timeout.cancel() }
+        await withTaskCancellationHandler {
+            await gameTask.value
+        } onCancel: {
+            gameTask.cancel()
         }
     }
 

@@ -3,15 +3,18 @@
 import SwiftUI
 import ChessCore
 import ChessUI
+import GameSessionKit
 
 struct SettingsScreen: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
     /// Focus opens on the first board swatch, keyed by theme name; Done sits in its own section above.
     @FocusState private var focusedSwatch: String?
     /// Credits take this screen's place rather than stacking a second full-screen cover on the
     /// one Settings is already presented in: one presentation, and Back steps back through it.
     @State private var showingCredits = false
+    @State private var soundPreview: SoundBoard?
 
     private var settings: AppSettings { model.settings }
 
@@ -37,6 +40,13 @@ struct SettingsScreen: View {
         .defaultFocus($focusedSwatch, BoardTheme.all.first?.name)
         // Back / Menu returns to the game, exactly like Done. Credits handle their own first.
         .onExitCommand { close() }
+        .onDisappear { soundPreview?.stopPreview() }
+        .onChange(of: settings.soundSet) { _, _ in soundPreview?.stopPreview() }
+        .onChange(of: settings.sounds) { _, _ in soundPreview?.stopPreview() }
+        .onChange(of: showingCredits) { _, _ in soundPreview?.stopPreview() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { soundPreview?.stopPreview() }
+        }
     }
 
     private func close() {
@@ -156,6 +166,33 @@ struct SettingsScreen: View {
                         }
                         Text("Deeper search runs the Apple TV hotter and may slow it down. "
                             + "Standard is fine for most games.")
+                            .font(.system(size: 20))
+                            .foregroundStyle(Palette.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                SettingsSection(title: "Sound set", value: settings.soundSet.displayName, valueID: UIID.Settings.soundSet) {
+                    VStack(alignment: .leading, spacing: 16) {
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 20), GridItem(.flexible())], spacing: 16) {
+                            ForEach(SoundSet.allCases, id: \.self) { set in
+                                soundSetButton(set)
+                            }
+                        }
+                        Button {
+                            if soundPreview == nil { soundPreview = SoundBoard(set: settings.soundSet) }
+                            soundPreview?.preview(settings.soundSet)
+                        } label: {
+                            Label("Preview sounds", systemImage: "speaker.wave.2")
+                                .font(.system(size: 24))
+                                .padding(.horizontal, 18)
+                                .padding(.vertical, 14)
+                                .frame(minHeight: 64)
+                                .background(RoundedRectangle(cornerRadius: 12).fill(Palette.panel))
+                        }
+                        .buttonStyle(TVFocusButtonStyle(cornerRadius: 16, padded: 6))
+                        .accessibilityIdentifier(UIID.Settings.previewSound)
+                        Text("Hear move, capture, then check. Preview works even when move sounds are off.")
                             .font(.system(size: 20))
                             .foregroundStyle(Palette.muted)
                             .fixedSize(horizontal: false, vertical: true)
@@ -305,6 +342,29 @@ struct SettingsScreen: View {
         .buttonStyle(TVFocusButtonStyle(cornerRadius: 16, padded: 6))
         .accessibilityLabel("\(depth.displayName) engine depth")
         .accessibilityIdentifier(UIID.Settings.depth(depth.rawValue))
+        .accessibilityAddTraits(isOn ? [.isSelected] : [])
+    }
+
+    private func soundSetButton(_ set: SoundSet) -> some View {
+        let isOn = set == settings.soundSet
+        return Button {
+            settings.soundSet = set
+        } label: {
+            HStack {
+                Text(set.displayName).font(.system(size: 24))
+                Spacer(minLength: 8)
+                Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isOn ? Palette.accent : Palette.muted)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, minHeight: 72)
+            .background(RoundedRectangle(cornerRadius: 12).fill(Palette.panel))
+            .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(isOn ? Palette.accent : .clear, lineWidth: 4))
+        }
+        .buttonStyle(TVFocusButtonStyle(cornerRadius: 16, padded: 6))
+        .accessibilityLabel("\(set.displayName) sound set")
+        .accessibilityIdentifier(UIID.Settings.soundSet(set.rawValue))
         .accessibilityAddTraits(isOn ? [.isSelected] : [])
     }
 

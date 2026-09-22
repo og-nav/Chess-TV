@@ -1,0 +1,50 @@
+{
+  "A-wood/move.wav": {
+    "duration": 0.105,
+    "peak_dbfs": -5.51
+  },
+  "A-wood/capture.wav": {
+    "duration": 0.18,
+    "peak_dbfs": -7.49
+  },
+  "A-wood/check.wav": {
+    "duration": 0.24,
+    "peak_dbfs": -9.09
+  },
+  "A-wood/gameover.wav": {
+    "duration": 0.4,
+    "peak_dbfs": -7.95
+  },
+  "B-felt/move.wav": {
+    "duration": 0.12,
+    "peak_dbfs": -5.51
+  },
+  "B-felt/capture.wav": {
+    "duration": 0.17,
+    "peak_dbfs": -5.8
+  },
+  "B-felt/check.wav": {
+    "duration": 0.28,
+    "peak_dbfs": -12.23
+  },
+  "B-felt/gameover.wav": {
+    "duration": 0.53,
+    "peak_dbfs": -21.04
+  },
+  "C-digital/move.wav": {
+    "duration": 0.1,
+    "peak_dbfs": -12.85
+  },
+  "C-digital/capture.wav": {
+    "duration": 0.18,
+    "peak_dbfs": -13.37
+  },
+  "C-digital/check.wav": {
+    "duration": 0.29,
+    "peak_dbfs": -18.76
+  },
+  "C-digital/gameover.wav": {
+    "duration": 0.59,
+    "peak_dbfs": -20.8
+  }
+}

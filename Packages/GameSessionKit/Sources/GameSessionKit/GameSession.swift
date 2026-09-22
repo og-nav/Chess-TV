@@ -142,7 +142,7 @@ public final class GameSession {
     @ObservationIgnored private let broadcasts: any BroadcastRoundFetching
     @ObservationIgnored private let arenas: any ArenaDetailing
     @ObservationIgnored private let fidePlayers: any FIDEPlayerLooking
-    @ObservationIgnored private lazy var sounds = SoundBoard()
+    @ObservationIgnored private lazy var sounds = SoundBoard(set: settings.soundSet)
 
     @ObservationIgnored private var feedTask: Task<Void, Never>?
     @ObservationIgnored private var connectionTask: Task<Void, Never>?
@@ -489,6 +489,10 @@ public final class GameSession {
 
     // MARK: - Feed
 
+    /// Give SwiftUI time to render each live ply, including moves delivered together at the
+    /// end of a game. History still reduces atomically without this presentation delay.
+    static let liveMoveDisplayDuration: Duration = .milliseconds(350)
+
     private func observeConnection() {
         guard connectionTask == nil else { return }
         let states = streamer.connectionStates
@@ -511,7 +515,15 @@ public final class GameSession {
                     guard let self, !Task.isCancelled else { return }
                     switch item {
                     case .event(let sourced):
+                        let previousRevision = self.game.revision
                         self.handle(sourced.event, isHistorical: sourced.isHistorical, historyComplete: sourced.historyComplete, isCached: sourced.isCached)
+                        if !sourced.isHistorical, case .fen = sourced.event,
+                           self.game.revision != previousRevision,
+                           self.isForeground, self.viewedPly == nil {
+                            // Suspend the consumer, not the network reader. Its unbounded queue
+                            // preserves every subsequent move and keeps the result behind them.
+                            try await Task.sleep(for: Self.liveMoveDisplayDuration)
+                        }
                     case .gameEnded(let gameId, let status):
                         self.gameEnded(gameId: gameId, status: status)
                     }
@@ -578,7 +590,7 @@ public final class GameSession {
         if game.position != nil { markTiming(.board) }
         markTiming(.live)
         markClocksIfLive()
-        if let outcome, settings.sounds { sounds.play(outcome) }
+        if let outcome, settings.sounds { sounds.play(outcome, set: settings.soundSet) }
         if game.position?.fen != previousFEN, viewedPly == nil { requestEvaluation() }
     }
 

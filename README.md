@@ -40,7 +40,7 @@ Simulator IDs can be overridden using the environment variables described in eac
 
 Chess TV is licensed under GPLv3; see `LICENSE`. It statically includes Stockfish 19, with its original notices in `Packages/EngineKit/Vendor/stockfish/` and modifications documented in `Packages/EngineKit/Vendor/PATCHES.md`. `scripts/fetch-net.sh` retrieves the exact `nn-1a298aa575a0.nnue` network from the Stockfish project and verifies its SHA-256 hash.
 
-Piece sets and their licences are documented in `Packages/ChessUI/LICENSES.md`; the apps bundle GPLv2, GPLv3 and Apache-2.0 texts and show credits in Settings. Move, capture, check and game-over audio are original deterministic synthesis: run `python3 scripts/make-sounds.py`. The move is the Wood audition; the other production sounds retain their previous synthesis.
+Piece sets and their licences are documented in `Packages/ChessUI/LICENSES.md`; the apps bundle GPLv2, GPLv3, AGPLv3 and Apache-2.0 texts and show credits in Settings. Six selectable sound sets include CC0 wooden recordings, original Soft Felt synthesis, and the explicitly AGPLv3-or-later Lichess Piano, NES and SFX sets. The original game-over chime is shared. Sources, credits, modifications and regeneration instructions are in `assets/audio/README.md`; run `python3 scripts/make-sounds.py` with ffmpeg installed to rebuild the audio and comparison gallery.
 
 Games, broadcasts, arenas and player portraits are supplied by Lichess. Chess TV is not affiliated with Lichess, FIDE or Stockfish. Apple Music is optional and requires the viewer's subscription.
 

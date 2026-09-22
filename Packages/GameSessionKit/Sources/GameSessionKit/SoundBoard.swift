@@ -1,35 +1,56 @@
 // Audio hardware acquisition and prepared players stay off the UI thread.
-// The four sounds are original to this project, synthesized by scripts/make-sounds.py
-// into Apps/ChessTV/Resources/Sounds (44.1 kHz, 16-bit, mono WAV).
+// Six selectable move/capture/check sets; game over is a shared original chime.
+// Sources, processing and licenses are documented in assets/audio/README.md.
 import AVFoundation
 
 @MainActor
 public final class SoundBoard {
     private let playback = SoundPlayback.shared
 
-    public init() {
-        Task { await playback.prepare() }
+    public init(set: SoundSet = .recordedWood) {
+        Task { await playback.prepare(set: set) }
     }
 
-    public func play(_ outcome: MoveOutcome) {
-        Task { await playback.play(outcome) }
+    public func play(_ outcome: MoveOutcome, set: SoundSet = .recordedWood) {
+        Task { await playback.play(outcome, set: set) }
     }
 
     public func playGameOver() {
         Task { await playback.playGameOver() }
     }
+
+    /// An explicit preview is audible even when automatic game sounds are muted.
+    public func preview(_ set: SoundSet) {
+        Task { await playback.preview(set) }
+    }
+
+    public func stopPreview() {
+        Task { await playback.stopPreview() }
+    }
 }
 
 /// AVAudioPlayer.prepareToPlay also acquires hardware and may block, so moving only
 /// AVAudioSession.setActive off MainActor is insufficient. All players live on this actor;
-/// none cross an isolation boundary. Each process prepares one set, shared by its sessions.
+/// none cross an isolation boundary. Sets load on demand and are shared by game sessions.
 private actor SoundPlayback {
     static let shared = SoundPlayback()
     private var prepared = false
-    private var players: [MoveOutcome: AVAudioPlayer] = [:]
+    private var players: [SoundSet: [MoveOutcome: AVAudioPlayer]] = [:]
     private var gameOver: AVAudioPlayer?
+    private var previewPlayers: [AVAudioPlayer] = []
+    private var previewTask: Task<Void, Never>?
 
-    func prepare() {
+    func prepare(set: SoundSet) {
+        prepareSession()
+        guard players[set] == nil else { return }
+        var loaded: [MoveOutcome: AVAudioPlayer] = [:]
+        for outcome in MoveOutcome.allCases {
+            loaded[outcome] = load(name: set.resourceName(for: outcome), extension: "wav")
+        }
+        players[set] = loaded
+    }
+
+    private func prepareSession() {
         guard !prepared else { return }
         prepared = true
         #if !os(macOS)
@@ -41,9 +62,6 @@ private actor SoundPlayback {
             appLog.error("Audio session unavailable: \(String(describing: error), privacy: .public)")
         }
         #endif
-        for (outcome, name) in [(MoveOutcome.move, "move"), (.capture, "capture"), (.check, "check")] {
-            players[outcome] = load(name: name, extension: "wav")
-        }
         gameOver = load(name: "gameover", extension: "wav")
     }
 
@@ -62,14 +80,40 @@ private actor SoundPlayback {
         }
     }
 
-    func play(_ outcome: MoveOutcome) {
-        prepare()
-        play(players[outcome])
+    func play(_ outcome: MoveOutcome, set: SoundSet) {
+        prepare(set: set)
+        play(players[set]?[outcome])
     }
 
     func playGameOver() {
-        prepare()
+        prepareSession()
         play(gameOver)
+    }
+
+    func preview(_ set: SoundSet) {
+        stopPreview()
+        prepareSession()
+        // Separate players let a live game's move play without cutting off the sample.
+        previewPlayers = MoveOutcome.allCases.compactMap {
+            load(name: set.resourceName(for: $0), extension: "wav")
+        }
+        previewTask = Task {
+            for player in previewPlayers {
+                guard !Task.isCancelled else { return }
+                play(player)
+                do { try await Task.sleep(for: .seconds(player.duration + 0.3)) }
+                catch { return }
+            }
+            previewPlayers = []
+            previewTask = nil
+        }
+    }
+
+    func stopPreview() {
+        previewTask?.cancel()
+        previewTask = nil
+        for player in previewPlayers { player.stop() }
+        previewPlayers = []
     }
 
     private func play(_ player: AVAudioPlayer?) {

@@ -7,6 +7,7 @@ import ChessUI
     var pieceSet: PieceSet { get set }
     var coordinates: Bool { get set }
     var sounds: Bool { get set }
+    var soundSet: SoundSet { get set }
     var engineEnabled: Bool { get set }
     var engineDepth: EngineDepth { get set }
     var flipBoard: Bool { get set }

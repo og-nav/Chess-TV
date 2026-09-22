@@ -16,6 +16,25 @@ final class SettingsUITests: UITestCase {
 
     // MARK: - Board and engine
 
+    func testSoundSetsSelectPreviewAndPersist() {
+        launchSettings(engine: false)
+        for name in ["Recorded Wood", "Muted Wood", "Soft Felt", "Lichess Piano", "Lichess NES", "Lichess SFX"] {
+            choose(name, in: UIID.Settings.soundSet)
+        }
+        let preview = app.buttons[UIID.Settings.previewSound]
+        XCTAssertTrue(revealRow(preview))
+        preview.tap()
+        preview.tap()
+        if isOn(UIID.Settings.sounds) { flip(UIID.Settings.sounds) }
+        app.terminate()
+        launchSettings(engine: false, keepState: true)
+        XCTAssertEqual(pickerValue(UIID.Settings.soundSet), "Lichess SFX")
+        XCTAssertFalse(isOn(UIID.Settings.sounds))
+        XCTAssertTrue(revealRow(app.buttons[UIID.Settings.previewSound]))
+        app.buttons[UIID.Settings.previewSound].tap()
+        XCTAssertFalse(isOn(UIID.Settings.sounds), "Preview must not unmute game sounds")
+    }
+
     func testEveryBoardChoiceCanBePickedAndSticks() {
         launchSettings()
         for theme in ["Brown", "Green", "Slate", "Sage"] {
@@ -222,7 +241,8 @@ final class SettingsUITests: UITestCase {
                 XCTAssertTrue(revealRow(source), "Credits should explain where to find the corresponding source")
             }
         }
-        XCTAssertTrue(findLabel("Sounds made for Chess TV."), "the sounds line should say who made them")
+        XCTAssertTrue(findLabel("Wooden chess sounds by el_boss on Freesound, released under CC0 1.0."))
+        XCTAssertTrue(findLabel("Lichess Piano, NES and SFX by Enigmahack and the Lichess authors, released under AGPLv3 or later."))
     }
 
     func testEveryBundledLicenceOpensAndScrolls() {
@@ -231,6 +251,7 @@ final class SettingsUITests: UITestCase {
             ("gpl3", "GPLv3", "GNU GENERAL PUBLIC LICENSE"),
             ("gpl2", "GPLv2", "GNU GENERAL PUBLIC LICENSE"),
             ("apache2", "Apache 2.0", "Apache License"),
+            ("agpl3", "AGPLv3", "GNU AFFERO GENERAL PUBLIC LICENSE"),
         ] {
             let row = app.buttons[UIID.Credits.licence(identifier)]
             XCTAssertTrue(revealRow(row), "Credits should offer the \(title) text")

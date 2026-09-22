@@ -15,6 +15,8 @@ import GameSessionKit
 struct SettingsScreen: View {
     @Environment(AppEnvironment.self) private var app
     @Environment(Navigator.self) private var navigator
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var soundPreview: SoundBoard?
 
     var body: some View {
         @Bindable var settings = app.settings
@@ -34,10 +36,31 @@ struct SettingsScreen: View {
                 .accessibilityIdentifier(UIID.Settings.pieces)
                 Toggle("Coordinates", isOn: $settings.coordinates.withSelectionFeedback())
                     .accessibilityIdentifier(UIID.Settings.coordinates)
-                Toggle("Sounds", isOn: $settings.sounds.withSelectionFeedback())
-                    .accessibilityIdentifier(UIID.Settings.sounds)
                 Toggle("Follow the featured player", isOn: $settings.followFeaturedPlayer.withSelectionFeedback())
                     .accessibilityIdentifier(UIID.Settings.followFeatured)
+            }
+            .listRowBackground(Palette.panel)
+
+            Section {
+                Toggle("Sounds", isOn: $settings.sounds.withSelectionFeedback())
+                    .accessibilityIdentifier(UIID.Settings.sounds)
+                Picker("Sound set", selection: $settings.soundSet.withSelectionFeedback()) {
+                    ForEach(SoundSet.allCases, id: \.self) { set in
+                        Text(set.displayName).tag(set)
+                    }
+                }
+                .accessibilityIdentifier(UIID.Settings.soundSet)
+                Button {
+                    if soundPreview == nil { soundPreview = SoundBoard(set: settings.soundSet) }
+                    soundPreview?.preview(settings.soundSet)
+                } label: {
+                    Label("Preview sounds", systemImage: "speaker.wave.2")
+                }
+                .accessibilityIdentifier(UIID.Settings.previewSound)
+            } header: {
+                Text("Sound")
+            } footer: {
+                Text("Hear move, capture, then check. Preview works even when sounds are off.")
             }
             .listRowBackground(Palette.panel)
 
@@ -96,6 +119,12 @@ struct SettingsScreen: View {
         .onChange(of: app.settings.boardThemeName) { _, _ in app.publishAppearance() }
         .onChange(of: app.settings.pieceSet) { _, _ in app.publishAppearance() }
         .onChange(of: app.settings.coordinates) { _, _ in app.publishAppearance() }
+        .onChange(of: app.settings.soundSet) { _, _ in soundPreview?.stopPreview() }
+        .onChange(of: app.settings.sounds) { _, _ in soundPreview?.stopPreview() }
+        .onDisappear { soundPreview?.stopPreview() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active { soundPreview?.stopPreview() }
+        }
     }
 
     private var notificationSummary: String {

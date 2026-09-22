@@ -230,6 +230,12 @@ public final class GameStream: @unchecked Sendable {   // @unchecked: URLSession
                         fen: fen
                     )
                     continuation.yield(SourcedEvent(event: featured, isHistorical: history.classify(featured)))
+                } else if let fen = metadata.fen, fen != seen.lastFen {
+                    // The closing summary can carry a position the move lines never delivered.
+                    // Preserve it before reporting the result, without inventing a last move.
+                    seen.lastFen = fen
+                    continuation.yield(SourcedEvent(event: .fen(fen: fen, lastMove: nil,
+                        whiteClock: nil, blackClock: nil), isHistorical: false))
                 }
                 if let status = metadata.status, status.isOver { terminal = status }
             case .move(let fen, let lastMove, let whiteClock, let blackClock):

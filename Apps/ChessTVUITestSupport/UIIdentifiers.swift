@@ -103,6 +103,9 @@ enum UIID {
         static func depth(_ raw: String) -> String { "settings.depth.\(raw)" }
         static let coordinates = "settings.coordinates"
         static let sounds = "settings.sounds"
+        static let soundSet = "settings.soundSet"
+        static func soundSet(_ raw: String) -> String { "settings.soundSet.\(raw)" }
+        static let previewSound = "settings.previewSound"
         static let followFeatured = "settings.followFeatured"
         static let engine = "settings.engine"
         static let keepTVOn = "settings.keepTVOn"
