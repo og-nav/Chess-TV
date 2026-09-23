@@ -191,4 +191,63 @@ struct StoreTests {
         let count = try await rig.store.deliveredAlertCount(deviceId: device.id, since: Fixture.now.addingTimeInterval(-3600))
         #expect(count == 2)     // the Live Activity update is not an alert
     }
+
+    @Test("Server-wide ceilings refuse new installs and follows, never existing ones")
+    func ceilings() async throws {
+        let rig = try await TestRig.make(limits: StoreLimits(maximumDevices: 2, maximumFollows: 3))
+        defer { Task { await rig.close() } }
+
+        let first = try await rig.device(follows: [Follow(target: .player(fideId: 1)), Follow(target: .player(fideId: 2))])
+        let second = try await rig.device(follows: [Follow(target: .player(fideId: 3))])
+        await #expect(throws: StoreError.full("The server is not taking new installs right now")) {
+            try await rig.store.register(DeviceRegistration(apnsToken: String(repeating: "c", count: 64)))
+        }
+        await #expect(throws: StoreError.full("The server is not taking new follows right now")) {
+            try await rig.store.addFollow(Follow(target: .player(fideId: 4)), deviceId: second.id)
+        }
+        // Changing the switches on a follow that already exists is not a new row.
+        var edited = Follow(target: .player(fideId: 1))
+        edited.alerts.game = [.end]
+        #expect(try await rig.store.addFollow(edited, deviceId: first.id).alerts.game == [.end])
+
+        // Room comes back as rows go.
+        try await rig.store.deleteDevice(id: second.id)
+        _ = try await rig.store.register(DeviceRegistration(apnsToken: String(repeating: "c", count: 64)))
+        _ = try await rig.store.addFollow(Follow(target: .player(fideId: 4)), deviceId: first.id)
+    }
+
+    @Test("The sweep removes disowned and abandoned installs, and keeps the rest")
+    func sweepsStaleInstalls() async throws {
+        let rig = try await TestRig.make()
+        defer { Task { await rig.close() } }
+        let day: TimeInterval = 86_400
+        let carlsen = Follow(target: .player(fideId: 1_503_014))
+
+        let disowned = try await rig.device(apnsToken: String(repeating: "1", count: 64), follows: [carlsen])
+        let recentlyDisowned = try await rig.device(apnsToken: String(repeating: "2", count: 64), follows: [carlsen])
+        let abandoned = try await rig.device(apnsToken: String(repeating: "3", count: 64), follows: [carlsen])
+        let quietButServed = try await rig.device(apnsToken: String(repeating: "4", count: 64), follows: [carlsen])
+        let active = try await rig.device(apnsToken: String(repeating: "5", count: 64), follows: [carlsen])
+
+        try await rig.store.disableDevice(id: disowned.id, reason: "BadDeviceToken")
+        rig.clock.advance(by: 29 * day)
+        // A push delivered to a phone that never opens the app: a real user, not a script.
+        _ = try await rig.store.enqueue(OutboxEntry(deviceId: quietButServed.id, dedupeKey: "k", collapseId: "c", category: .gameMove, payloadJSON: "{}", queuedAt: rig.clock.read()))
+        for entry in try await rig.store.queuedEntries() { try await rig.store.markDelivered(id: entry.id) }
+        try await rig.store.disableDevice(id: recentlyDisowned.id, reason: "BadDeviceToken")
+        rig.clock.advance(by: 2 * day)
+        try await rig.store.touch(deviceId: active.id)
+        // Seen recently, so only the disowned rule could take it, and that one waits a week.
+        try await rig.store.touch(deviceId: recentlyDisowned.id)
+
+        try await rig.store.sweep(now: rig.clock.read())
+
+        #expect(try await rig.store.device(id: disowned.id) == nil)
+        #expect(try await rig.store.device(id: abandoned.id) == nil)
+        #expect(try await rig.store.follows(deviceId: abandoned.id).isEmpty)
+        #expect(try await rig.store.device(id: recentlyDisowned.id) != nil)
+        #expect(try await rig.store.device(id: quietButServed.id) != nil)
+        #expect(try await rig.store.device(id: active.id) != nil)
+        #expect(try await rig.store.follows(deviceId: active.id).count == 1)
+    }
 }

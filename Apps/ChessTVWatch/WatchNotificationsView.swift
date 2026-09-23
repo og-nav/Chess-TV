@@ -141,6 +141,9 @@ struct WatchFollowAlertsView: View {
                     Toggle(isOn: gameBinding(alert).withSelectionFeedback()) { Text(label(alert)) }
                 }
             }
+            Toggle(isOn: swingBinding.withSelectionFeedback()) {
+                Text("Big swings", comment: "Alert switch: the engine judged a move a blunder")
+            }
             if let failure {
                 Text(failure).font(.caption2).foregroundStyle(ChessTVPalette.muted)
             }
@@ -171,6 +174,17 @@ struct WatchFollowAlertsView: View {
         )
     }
 
+    private var swingBinding: Binding<Bool> {
+        Binding(
+            get: { current.evalSwings },
+            set: { isOn in
+                var alerts = current
+                alerts.evalSwings = isOn
+                write(alerts)
+            }
+        )
+    }
+
     private func write(_ alerts: FollowAlerts) {
         let previous = current
         sync.applyLocally(alerts: alerts, forFollow: follow.id)
@@ -187,6 +201,11 @@ struct WatchFollowAlertsView: View {
             do {
                 _ = try await client.update(updated)
                 watchLog.notice("Alerts written from the watch for follow \(follow.id, privacy: .public)")
+            } catch FollowServerError.rejected(let reason) where !reason.isEmpty {
+                // The server said no rather than failing to answer: the ten-follow cap on big
+                // swings is the case this exists for, and its message says what to do.
+                sync.applyLocally(alerts: previous, forFollow: follow.id)
+                failure = reason
             } catch {
                 sync.applyLocally(alerts: previous, forFollow: follow.id)
                 failure = String(localized: "Could not reach the alert server.", comment: "Watch error after a failed write")

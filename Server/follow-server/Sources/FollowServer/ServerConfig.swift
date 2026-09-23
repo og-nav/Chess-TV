@@ -24,6 +24,8 @@ public struct ServerConfig: Sendable {
 
     /// Absolute path to the SQLite file. `:memory:` is accepted for tests and `--replay`.
     public var databasePath: String = "/var/lib/follow-server/follow.sqlite"
+    /// Server-wide row ceilings; see `StoreLimits`.
+    public var storeLimits = StoreLimits()
 
     // MARK: APNs
 
@@ -67,6 +69,19 @@ public struct ServerConfig: Sendable {
     /// against Lichess for days.
     public var activityLifetime: TimeInterval = 12 * 3600
 
+    // MARK: Eval swings
+
+    /// Whether to run Stockfish at all. The runtime image turns it on; `FOLLOW_EVAL_ENABLED=0` in
+    /// the compose file is the switch that turns it off again without a rebuild.
+    public var evalEnabled: Bool = false
+    public var stockfishPath: String = "/usr/local/bin/stockfish"
+    public var stockfishHashMegabytes: Int = 32
+    public var swings = SwingConfiguration()
+    /// The share of winning chances a move must give away, on Lichess's [-1, 1] scale. 0.3 is
+    /// Lichess's blunder; checked against 92 Olympiad games it fires about 1.7 times in a decisive
+    /// game and 0.2 times in a draw.
+    public var swingThreshold: Double = 0.3
+
     // MARK: Delivery
 
     /// How often the outbox worker looks for queued pushes. Delivery is also kicked immediately
@@ -100,6 +115,8 @@ public struct ServerConfig: Sendable {
         config.requireHTTPS = bool("FOLLOW_REQUIRE_HTTPS") ?? config.requireHTTPS
         config.maximumRequestBytes = int("FOLLOW_MAX_REQUEST_BYTES") ?? config.maximumRequestBytes
         config.databasePath = string("FOLLOW_DB") ?? config.databasePath
+        config.storeLimits.maximumDevices = int("FOLLOW_MAX_DEVICES") ?? config.storeLimits.maximumDevices
+        config.storeLimits.maximumFollows = int("FOLLOW_MAX_FOLLOWS") ?? config.storeLimits.maximumFollows
 
         config.apnsTeamId = string("APNS_TEAM_ID") ?? ""
         config.apnsKeyId = string("APNS_KEY_ID") ?? ""
@@ -115,6 +132,13 @@ public struct ServerConfig: Sendable {
         if let hours = int("FOLLOW_ACTIVITY_HOURS") { config.activityLifetime = TimeInterval(max(1, hours) * 3600) }
         if let seconds = int("FOLLOW_OUTBOX_SECONDS") { config.outboxInterval = .seconds(max(1, seconds)) }
         config.maximumDeliveryAttempts = int("FOLLOW_MAX_ATTEMPTS") ?? config.maximumDeliveryAttempts
+        config.evalEnabled = bool("FOLLOW_EVAL_ENABLED") ?? config.evalEnabled
+        config.stockfishPath = string("FOLLOW_STOCKFISH_PATH") ?? config.stockfishPath
+        if let megabytes = int("FOLLOW_EVAL_HASH_MB") { config.stockfishHashMegabytes = min(max(megabytes, 1), 256) }
+        if let ms = int("FOLLOW_EVAL_MOVETIME_MS") { config.swings.movetimeMs = min(max(ms, 100), 10_000) }
+        if let ms = int("FOLLOW_EVAL_CONFIRM_MS") { config.swings.confirmMovetimeMs = min(max(ms, 100), 30_000) }
+        if let boards = int("FOLLOW_EVAL_MAX_BOARDS") { config.swings.maximumBoards = min(max(boards, 1), 200) }
+        if let threshold = string("FOLLOW_EVAL_THRESHOLD").flatMap(Double.init) { config.swingThreshold = min(max(threshold, 0.1), 2) }
         if let level = string("LOG_LEVEL").flatMap({ Logger.Level(rawValue: $0.lowercased()) }) { config.logLevel = level }
         return config
     }
@@ -127,7 +151,8 @@ public struct ServerConfig: Sendable {
     public var summary: String {
         """
         listening \(host):\(port) · db \(databasePath) · apns \(apnsEnabled ? "on (topic \(apnsTopic))" : "off, recording only") \
-        · lichess \(lichessToken == nil ? "anonymous" : "with token") · poll \(pollInterval) · max rounds \(maximumWatchedRounds)
+        · lichess \(lichessToken == nil ? "anonymous" : "with token") · poll \(pollInterval) · max rounds \(maximumWatchedRounds) \
+        · swings \(evalEnabled ? "on (\(swings.movetimeMs) ms, \(swings.maximumBoards) boards)" : "off")
         """
     }
 
@@ -137,6 +162,12 @@ public struct ServerConfig: Sendable {
         var problems: [String] = []
         if port <= 0 || port > 65_535 { problems.append("FOLLOW_PORT is not a port") }
         if databasePath.isEmpty { problems.append("FOLLOW_DB is empty") }
+        if evalEnabled, !FileManager.default.isExecutableFile(atPath: stockfishPath) {
+            problems.append("FOLLOW_EVAL_ENABLED is on but FOLLOW_STOCKFISH_PATH is not an executable")
+        }
+        if storeLimits.maximumDevices < 1 || storeLimits.maximumFollows < 1 {
+            problems.append("FOLLOW_MAX_DEVICES and FOLLOW_MAX_FOLLOWS must be positive")
+        }
         if apnsTeamId.isEmpty != apnsKeyId.isEmpty || apnsKeyId.isEmpty != apnsKeyPath.isEmpty {
             problems.append("APNS_TEAM_ID, APNS_KEY_ID and APNS_KEY_PATH must be set together or not at all")
         }

@@ -124,21 +124,24 @@ public struct AlertEngine: Sendable {
         let snapshot = event.snapshot
         var best: (specificity: Int, kind: MovePushKind)?
         var followIds: [String] = []
+        // Only the oldest few swing switches count, whatever the stored rows say.
+        let swingFollows = Set(device.follows.filter(\.alerts.evalSwings).prefix(Self.maximumSwingFollowsPerDevice).map(\.id))
 
         for follow in device.follows {
+            if event.kind == .evalSwing, !swingFollows.contains(follow.id) { continue }
             var specificity = 0
             var kind: MovePushKind
 
             switch follow.target {
             case .game(let roundId, let gameId):
                 guard gameId == snapshot.gameId, roundId.isEmpty || roundId == snapshot.roundId else { continue }
-                guard follow.alerts.game.contains(event.gameAlert) else { continue }
+                guard Self.wants(event, follow) else { continue }
                 specificity = 3
                 kind = Self.pushKind(for: event.kind)
 
             case .player(let fideId):
                 guard snapshot.whiteFideId == fideId || snapshot.blackFideId == fideId else { continue }
-                guard follow.alerts.game.contains(event.gameAlert) else { continue }
+                guard Self.wants(event, follow) else { continue }
                 specificity = 2
                 kind = Self.pushKind(for: event.kind)
 
@@ -154,6 +157,9 @@ public struct AlertEngine: Sendable {
                 case .move:
                     guard follow.alerts.tournament.contains(.topBoardMoves) else { continue }
                     kind = .move
+                case .evalSwing:
+                    guard follow.alerts.evalSwings else { continue }
+                    kind = .evalSwing
                 case .gameStart, .longThink:
                     continue
                 }
@@ -193,7 +199,33 @@ public struct AlertEngine: Sendable {
         case .move: .move
         case .longThink: .longThink
         case .gameEnd: .gameEnd
+        case .evalSwing: .evalSwing
         }
+    }
+
+    /// Whether a player or game follow's switches ask for this event.
+    private static func wants(_ event: MoveEvent, _ follow: Follow) -> Bool {
+        guard let alert = event.gameAlert else { return event.kind == .evalSwing && follow.alerts.evalSwings }
+        return follow.alerts.game.contains(alert)
+    }
+
+    /// The most follows on one install that can ask for swings. Enforced where the demand is
+    /// counted, so a script with a hundred follows per install pulls no more engine time than a
+    /// person with ten.
+    public static let maximumSwingFollowsPerDevice = FollowAlerts.maximumEvalSwingFollows
+
+    /// Whether anyone who would be told about a swing on this board is listening right now. The
+    /// pipeline asks before it offers a move to the engine: no listener, no search.
+    ///
+    /// The same matching as a real swing — follow targets, the top-boards rule, mute and quiet
+    /// hours — so the engine never searches a position whose verdict nobody could receive.
+    public func wantsSwings(snapshot: GameSnapshot, context: RoundContext, devices: [DeviceContext], now: Date) -> Bool {
+        let probe = MoveEvent(kind: .evalSwing, snapshot: snapshot, at: now)
+        for device in devices where device.device.isActive {
+            guard device.preferences.allowsAlert(kind: .evalSwing, at: now) else { continue }
+            if select(event: probe, context: context, device: device, cooldowns: [:], now: now) != nil { return true }
+        }
+        return false
     }
 
     /// The top-boards rule: a tournament follow covers the first `topBoards` boards in round
@@ -226,7 +258,8 @@ public struct AlertEngine: Sendable {
             whiteClock: snapshot.whiteClock,
             blackClock: snapshot.blackClock,
             status: snapshot.status,
-            sentAt: event.at
+            sentAt: event.at,
+            swing: event.swing.map { PushSwing(kind: $0.kind.rawValue, before: $0.before.display, after: $0.after.display) }
         )
     }
 
@@ -246,7 +279,8 @@ public struct AlertEngine: Sendable {
     }
 
     private func activityEntries(for event: MoveEvent, activities: [ActivityRecord], now: Date) -> [OutboxEntry] {
-        guard event.kind != .longThink else { return [] }
+        // A long think moves nothing, and a swing is about a position the move already sent.
+        guard event.kind != .longThink, event.kind != .evalSwing else { return [] }
         let matching = activities.filter { $0.gameId == event.snapshot.gameId }
         guard !matching.isEmpty else { return [] }
 

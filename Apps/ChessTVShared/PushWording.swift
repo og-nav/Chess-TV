@@ -56,6 +56,31 @@ public enum PushWordingBuilder {
             if let clocks = clockLine(push) { parts.append(clocks) }
             return PushWording(title: title, subtitle: event, body: parts.joined(separator: " · "))
 
+        case "evalSwing":
+            // Who blundered is the side that just moved: the one *not* on move now.
+            let mover = ChessFormat.sideToMove(push) == .white ? push.black : push.white
+            let title: String
+            switch push.swing?.kind {
+            case "throwsWin":
+                title = String(format: String(localized: "%@ lets the win slip", comment: "Notification title: a player threw away a winning position"), mover.name)
+            case "allowsMate":
+                title = String(format: String(localized: "%@ walks into mate", comment: "Notification title: a player's move allows a forced mate"), mover.name)
+            case "missesMate":
+                title = String(format: String(localized: "%@ misses a forced mate", comment: "Notification title: a player had mate and did not play it"), mover.name)
+            default:
+                title = String(format: String(localized: "Blunder by %@", comment: "Notification title: the engine judged a move a blunder"), mover.name)
+            }
+            var parts: [String] = []
+            if let move = ChessFormat.moveLabel(push) { parts.append(move) }
+            if let swing = push.swing {
+                parts.append(String(
+                    format: String(localized: "Stockfish %1$@ → %2$@", comment: "Notification body: the evaluation before and after the move"),
+                    swing.before, swing.after
+                ))
+            }
+            parts.append(pairing)
+            return PushWording(title: title, subtitle: event, body: parts.joined(separator: " · "))
+
         case "gameEnd", "gameResult":
             let result = ChessFormat.result(status: push.status) ?? String(localized: "finished", comment: "A game with no scoreline")
             let title = String(

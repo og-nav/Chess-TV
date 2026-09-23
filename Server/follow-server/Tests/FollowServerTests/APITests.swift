@@ -46,6 +46,21 @@ struct APITests {
         await store.close()
     }
 
+    @Test("The listing's privacy and support pages are public HTML")
+    func publicPages() async throws {
+        let (app, store) = try await application()
+        try await app.test(.router) { client in
+            for (path, heading) in [("/privacy", "Chess TV privacy policy"), ("/support", "Chess TV support")] {
+                try await client.execute(uri: path, method: .get) { response in
+                    #expect(response.status == .ok)
+                    #expect(response.headers[.contentType]?.hasPrefix("text/html") == true)
+                    #expect(String(buffer: response.body).contains(heading))
+                }
+            }
+        }
+        await store.close()
+    }
+
     @Test("Registration mints a credential; a malformed one is refused")
     func registering() async throws {
         let (app, store) = try await application()

@@ -1,12 +1,17 @@
-# Use a release binary built by swift:6.2-noble on linux/amd64.
-# Copy it to a temporary source-free context as `follow-server`, then:
+# Use a release binary built by swift:6.2-noble on linux/amd64, and a Stockfish built on
+# ubuntu:24.04 (the same distribution, so the same libstdc++) with its network embedded.
+# Copy both to a temporary source-free context as `follow-server` and `stockfish`, then:
 # docker build -f Server/Dockerfile.runtime -t chesstv-follow:local <temporary-context>
+#
+# Swing alerts are on in the image. `FOLLOW_EVAL_ENABLED: 0` in the compose file turns them off.
 FROM swift:6.2-noble
 RUN groupadd --system --gid 10001 follow \
     && useradd --system --uid 10001 --gid follow --home /var/lib/follow-server follow \
     && mkdir -p /var/lib/follow-server && chown follow:follow /var/lib/follow-server
 COPY follow-server /usr/local/bin/follow-server
-ENV FOLLOW_HOST=0.0.0.0 FOLLOW_PORT=8099 FOLLOW_DB=/var/lib/follow-server/follow.sqlite FOLLOW_REQUIRE_HTTPS=1
+COPY stockfish /usr/local/bin/stockfish
+ENV FOLLOW_HOST=0.0.0.0 FOLLOW_PORT=8099 FOLLOW_DB=/var/lib/follow-server/follow.sqlite FOLLOW_REQUIRE_HTTPS=1 \
+    FOLLOW_EVAL_ENABLED=1 FOLLOW_STOCKFISH_PATH=/usr/local/bin/stockfish
 USER follow
 EXPOSE 8099
 ENTRYPOINT ["/usr/local/bin/follow-server"]

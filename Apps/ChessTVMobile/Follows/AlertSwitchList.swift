@@ -9,6 +9,9 @@ import FollowKit
 struct AlertSwitchList: View {
     @Binding var alerts: FollowAlerts
     let kind: FollowKind
+    /// False when this install already has `FollowAlerts.maximumEvalSwingFollows` other follows
+    /// with swings on: the switch can then be turned off but not on, as the server would refuse it.
+    var swingsAvailable = true
 
     var body: some View {
         if kind.isBoardShaped {
@@ -51,6 +54,8 @@ struct AlertSwitchList: View {
             }
         }
 
+        swingSection
+
         if AlertCatalogue.longThinkApplies(to: alerts) {
             Section {
                 Picker("Long think after", selection: $alerts.longThinkMinutes.withSelectionFeedback()) {
@@ -85,6 +90,8 @@ struct AlertSwitchList: View {
             }
         }
 
+        swingSection
+
         if alerts.tournament.contains(.startingSoon) {
             Section {
                 Picker("Heads-up", selection: $alerts.startingSoonMinutes.withSelectionFeedback()) {
@@ -99,7 +106,7 @@ struct AlertSwitchList: View {
             }
         }
 
-        if alerts.tournament.contains(.gameResults) || alerts.tournament.contains(.topBoardMoves) {
+        if alerts.tournament.contains(.gameResults) || alerts.tournament.contains(.topBoardMoves) || alerts.evalSwings {
             Section {
                 Picker("Boards watched", selection: $alerts.topBoards.withSelectionFeedback()) {
                     ForEach(Array(AlertCatalogue.topBoardsRange), id: \.self) { boards in
@@ -109,7 +116,7 @@ struct AlertSwitchList: View {
                 .listRowBackground(Palette.panel)
                 .accessibilityIdentifier(UIID.FollowDetail.topBoards)
             } footer: {
-                Text("Results and moves cover these boards plus any board with a player you follow. Everything else is covered by the round summary \u{2014} which is what keeps a hundred-board open from sending a hundred alerts.")
+                Text("Results, moves and big swings cover these boards plus any board with a player you follow. Everything else is covered by the round summary \u{2014} which is what keeps a hundred-board open from sending a hundred alerts.")
             }
         }
 
@@ -125,6 +132,28 @@ struct AlertSwitchList: View {
             } footer: {
                 Text("This is the noisy switch. An interval of a few minutes keeps a classical round to a handful of alerts.")
             }
+        }
+    }
+
+    // MARK: - Engine
+
+    @ViewBuilder
+    private var swingSection: some View {
+        let locked = !alerts.evalSwings && !swingsAvailable
+        Section {
+            Toggle(isOn: $alerts.evalSwings.withSelectionFeedback()) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(AlertCatalogue.swingTitle)
+                    Text(AlertCatalogue.swingDetail)
+                        .font(.caption)
+                        .foregroundStyle(Palette.muted)
+                }
+            }
+            .disabled(locked)
+            .listRowBackground(Palette.panel)
+            .accessibilityIdentifier(UIID.FollowDetail.toggle("evalSwings"))
+        } footer: {
+            Text(locked ? AlertCatalogue.swingLimitText : AlertCatalogue.swingFooter)
         }
     }
 

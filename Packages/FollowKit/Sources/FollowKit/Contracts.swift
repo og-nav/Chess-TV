@@ -189,6 +189,13 @@ public struct FollowAlerts: Codable, Sendable, Hashable {
     /// 1…5. `gameResults` and `topBoardMoves` cover these boards in round order, plus any board
     /// holding a player the same device follows. Everything else is covered by `roundSummary`.
     public var topBoards: Int
+    /// Tell me when the server's engine sees a game swing: a blunder, a win thrown away, a mate
+    /// allowed or missed. Applies to every target kind; a tournament follow covers `topBoards`.
+    ///
+    /// A plain field rather than a `GameAlert` case on purpose: builds that predate it decode
+    /// `game` strictly, and an unknown case there would fail the whole follow list. An unknown key
+    /// is ignored instead, so an older build simply never sees this switch.
+    public var evalSwings: Bool
 
     public init(
         game: Set<GameAlert> = [],
@@ -196,7 +203,8 @@ public struct FollowAlerts: Codable, Sendable, Hashable {
         minMinutesBetweenMoveAlerts: Int = 0,
         longThinkMinutes: Int = 10,
         startingSoonMinutes: Int = 15,
-        topBoards: Int = 1
+        topBoards: Int = 1,
+        evalSwings: Bool = false
     ) {
         self.game = game
         self.tournament = tournament
@@ -204,6 +212,7 @@ public struct FollowAlerts: Codable, Sendable, Hashable {
         self.longThinkMinutes = longThinkMinutes
         self.startingSoonMinutes = startingSoonMinutes
         self.topBoards = topBoards
+        self.evalSwings = evalSwings
     }
 
     /// The bounds the server enforces and the UI should not offer past. A hostile or buggy client
@@ -212,6 +221,9 @@ public struct FollowAlerts: Codable, Sendable, Hashable {
     public static let minutesBetweenMoveAlertsRange = 0...240
     public static let longThinkRange = 1...120
     public static let startingSoonRange = 1...720
+    /// How many of one install's follows may have `evalSwings` on. The server refuses the next
+    /// one and the app greys the switch out, so both read this.
+    public static let maximumEvalSwingFollows = 10
 
     /// The same value with every number pulled inside its range. The server calls this on the way
     /// in; the app may call it too so the UI shows what will actually happen.
@@ -246,7 +258,7 @@ public struct FollowAlerts: Codable, Sendable, Hashable {
     // Written by hand so an older client, or a field added later, decodes into the defaults
     // instead of failing the whole request.
     private enum CodingKeys: String, CodingKey {
-        case game, tournament, minMinutesBetweenMoveAlerts, longThinkMinutes, startingSoonMinutes, topBoards
+        case game, tournament, minMinutesBetweenMoveAlerts, longThinkMinutes, startingSoonMinutes, topBoards, evalSwings
     }
 
     public init(from decoder: any Decoder) throws {
@@ -257,6 +269,7 @@ public struct FollowAlerts: Codable, Sendable, Hashable {
         longThinkMinutes = try container.decodeIfPresent(Int.self, forKey: .longThinkMinutes) ?? 10
         startingSoonMinutes = try container.decodeIfPresent(Int.self, forKey: .startingSoonMinutes) ?? 15
         topBoards = try container.decodeIfPresent(Int.self, forKey: .topBoards) ?? 1
+        evalSwings = try container.decodeIfPresent(Bool.self, forKey: .evalSwings) ?? false
     }
 }
 
@@ -417,6 +430,24 @@ public struct PushPlayer: Codable, Sendable, Hashable {
 /// the closed set it holds, so neither side has to spell a literal.
 public enum MovePushKind: String, Codable, Sendable, CaseIterable, Hashable {
     case gameStart, move, longThink, gameEnd, gameResult
+    /// The server's engine judged the move in the payload a blunder; `MovePush.swing` says how.
+    case evalSwing
+}
+
+/// What the engine saw, for an `evalSwing` push. Display strings, formatted by the server, so a
+/// client never has to agree with it on how to write an evaluation.
+public struct PushSwing: Codable, Sendable, Hashable {
+    /// `blunder`, `throwsWin`, `allowsMate` or `missesMate`. Unknown values read as `blunder`.
+    public var kind: String
+    /// White's point of view, the way a chess site writes it: `"+0.4"`, `"−2.8"`, `"#3"`, `"#−2"`.
+    public var before: String
+    public var after: String
+
+    public init(kind: String, before: String, after: String) {
+        self.kind = kind
+        self.before = before
+        self.after = after
+    }
 }
 
 /// The `d` key of a board-shaped alert (`aps.category == PushCategory.gameMove`).
@@ -444,6 +475,8 @@ public struct MovePush: Codable, Sendable, Hashable {
     /// The PGN result token: `"*"`, `"1-0"`, `"0-1"`, `"1/2-1/2"`.
     public var status: String
     public var sentAt: Date
+    /// Present on `evalSwing` pushes only. Older builds ignore the key.
+    public var swing: PushSwing?
 
     public init(
         kind: MovePushKind = .move,
@@ -460,7 +493,8 @@ public struct MovePush: Codable, Sendable, Hashable {
         whiteClock: Int? = nil,
         blackClock: Int? = nil,
         status: String = "*",
-        sentAt: Date = Date()
+        sentAt: Date = Date(),
+        swing: PushSwing? = nil
     ) {
         self.kind = kind.rawValue
         self.roundId = roundId
@@ -477,6 +511,7 @@ public struct MovePush: Codable, Sendable, Hashable {
         self.blackClock = blackClock
         self.status = status
         self.sentAt = sentAt
+        self.swing = swing
     }
 
     public static let startingFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"

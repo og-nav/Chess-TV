@@ -183,6 +183,8 @@ targets:
         buildPhase: resources
       - path: Fixtures/push-end.apns
         buildPhase: resources
+      - path: Fixtures/push-evalswing.apns
+        buildPhase: resources
       - path: Fixtures/push-longthink.apns
         buildPhase: resources
       - path: Fixtures/push-move.apns

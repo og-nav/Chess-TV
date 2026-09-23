@@ -96,12 +96,12 @@ struct TestRig {
     let clock: MutableClock
     var configuration: ServerConfig
 
-    static func make(now: Date = Fixture.now, configuration: ServerConfig? = nil) async throws -> TestRig {
+    static func make(now: Date = Fixture.now, configuration: ServerConfig? = nil, limits: StoreLimits = StoreLimits()) async throws -> TestRig {
         let clock = MutableClock(now)
         var settings = configuration ?? ServerConfig()
         settings.databasePath = ":memory:"
         settings.requireHTTPS = false
-        let store = try await FollowStore.open(path: ":memory:", now: clock.read)
+        let store = try await FollowStore.open(path: ":memory:", limits: limits, now: clock.read)
         let delivery = RecordingDelivery()
         let outbox = OutboxWorker(store: store, delivery: delivery, configuration: settings, now: clock.read)
         let pipeline = FollowPipeline(store: store, outbox: outbox)

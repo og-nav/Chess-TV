@@ -25,6 +25,8 @@ public struct RoundContext: Sendable, Equatable {
     public var tourId: String
     public var tourName: String
     public var bannerURL: URL?
+    /// Lichess's own ranking of the event, 5 for a world championship. Nil when unranked.
+    public var tier: Int?
     /// Game ids in the round's own order. Board 1 is `boards[0]`.
     public var boards: [String]
     public var boardPlayers: [String: BoardPlayers]
@@ -35,6 +37,7 @@ public struct RoundContext: Sendable, Equatable {
         tourId: String,
         tourName: String,
         bannerURL: URL? = nil,
+        tier: Int? = nil,
         boards: [String] = [],
         boardPlayers: [String: BoardPlayers] = [:]
     ) {
@@ -43,6 +46,7 @@ public struct RoundContext: Sendable, Equatable {
         self.tourId = tourId
         self.tourName = tourName
         self.bannerURL = bannerURL
+        self.tier = tier
         self.boards = boards
         self.boardPlayers = boardPlayers
     }
@@ -54,6 +58,7 @@ public struct RoundContext: Sendable, Equatable {
             tourId: detail.tour.id,
             tourName: detail.tour.name,
             bannerURL: detail.tour.imageURL,
+            tier: detail.tour.tier,
             boards: detail.games.map(\.id),
             boardPlayers: Dictionary(uniqueKeysWithValues: detail.games.map { ($0.id, BoardPlayers(white: $0.white, black: $0.black)) })
         )
@@ -71,6 +76,8 @@ public struct GameSnapshot: Sendable, Equatable {
     public var gameId: String
     public var ply: Int
     public var fen: String
+    /// The position before the last move, which is what the mover was looking at. Nil at ply 0.
+    public var previousFen: String?
     /// UCI of the last move, for square highlighting.
     public var lastMove: String?
     public var san: String?
@@ -87,6 +94,7 @@ public struct GameSnapshot: Sendable, Equatable {
         gameId: String,
         ply: Int = 0,
         fen: String = MovePush.startingFEN,
+        previousFen: String? = nil,
         lastMove: String? = nil,
         san: String? = nil,
         whiteClock: Int? = nil,
@@ -101,6 +109,7 @@ public struct GameSnapshot: Sendable, Equatable {
         self.gameId = gameId
         self.ply = ply
         self.fen = fen
+        self.previousFen = previousFen
         self.lastMove = lastMove
         self.san = san
         self.whiteClock = whiteClock
@@ -146,6 +155,8 @@ public struct GameSnapshot: Sendable, Equatable {
 public struct MoveEvent: Sendable, Equatable {
     public enum Kind: String, Sendable, Equatable {
         case gameStart, move, longThink, gameEnd
+        /// Raised by `SwingWatcher`, not the differ, once the engine has judged a move.
+        case evalSwing
     }
 
     public var kind: Kind
@@ -155,21 +166,26 @@ public struct MoveEvent: Sendable, Equatable {
     /// server first saw the position, not from the clocks: an increment makes clock subtraction
     /// answer a different question.
     public var thinkSeconds: Int?
+    /// What the engine saw, for `evalSwing`.
+    public var swing: EvalSwing?
 
-    public init(kind: Kind, snapshot: GameSnapshot, at: Date, thinkSeconds: Int? = nil) {
+    public init(kind: Kind, snapshot: GameSnapshot, at: Date, thinkSeconds: Int? = nil, swing: EvalSwing? = nil) {
         self.kind = kind
         self.snapshot = snapshot
         self.at = at
         self.thinkSeconds = thinkSeconds
+        self.swing = swing
     }
 
-    /// The `GameAlert` switch a player or game follow uses to say yes or no to this.
-    public var gameAlert: GameAlert {
+    /// The `GameAlert` switch a player or game follow uses to say yes or no to this. Nil for a
+    /// swing, which has its own switch (`FollowAlerts.evalSwings`).
+    public var gameAlert: GameAlert? {
         switch kind {
         case .gameStart: .start
         case .move: .move
         case .longThink: .longThink
         case .gameEnd: .end
+        case .evalSwing: nil
         }
     }
 }

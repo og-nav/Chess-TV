@@ -13,7 +13,7 @@ struct PushSurfaceTests {
         return try #require(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
     }
 
-    @Test(arguments: ["push-start", "push-move", "push-longthink", "push-end"])
+    @Test(arguments: ["push-start", "push-move", "push-longthink", "push-end", "push-evalswing"])
     func boardAlertsDecode(_ name: String) throws {
         let dictionary = try fixture(name)
         let push = try #require(ChessPush.decode(userInfo: dictionary))
@@ -21,6 +21,17 @@ struct PushSurfaceTests {
         #expect((try? Position(fen: move.fen)) != nil)
         #expect(move.sentAt.timeIntervalSince1970 > 1_700_000_000)
         #expect(!PushWordingBuilder.wording(for: push).title.isEmpty)
+    }
+
+    @Test func evalSwingReadsAsASwing() throws {
+        let push = try #require(ChessPush.decode(userInfo: try fixture("push-evalswing")))
+        guard case .game(let move) = push else { Issue.record("Expected board alert"); return }
+        #expect(move.pushKind == .evalSwing)
+        let wording = PushWordingBuilder.wording(for: push)
+        // Black played the move (White is on move), so the swing is Black's.
+        #expect(wording.title == "Nepomniachtchi lets the win slip")
+        #expect(wording.body.contains("Stockfish \u{2212}3.4 → \u{2212}0.2"))
+        #expect(wording.body.contains("Qh1"))
     }
 
     @Test(arguments: ["push-tournament-soon", "push-round-live", "push-round-finished", "push-tournament-finished"])

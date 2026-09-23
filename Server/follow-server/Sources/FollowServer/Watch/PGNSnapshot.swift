@@ -67,6 +67,7 @@ public enum PGNSnapshot {
             gameId: gameId,
             ply: steps.count,
             fen: last?.fen ?? game.initialPosition.fen,
+            previousFen: steps.isEmpty ? nil : (steps.count >= 2 ? steps[steps.count - 2].fen : game.initialPosition.fen),
             lastMove: last?.uci,
             san: last?.san,
             whiteClock: whiteClock ?? players?.white.clock,

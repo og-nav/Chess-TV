@@ -25,7 +25,11 @@ public enum FollowServerApp {
         }
         logger.info("starting", metadata: ["configuration": .string(configuration.summary)])
 
-        let store = try await FollowStore.open(path: configuration.databasePath, logger: ServerLog.make("store", level: configuration.logLevel))
+        let store = try await FollowStore.open(
+            path: configuration.databasePath,
+            logger: ServerLog.make("store", level: configuration.logLevel),
+            limits: configuration.storeLimits
+        )
 
         var httpConfiguration = HTTPClient.Configuration()
         // Long enough for a quiet classical board to stay connected, short enough that a dead
@@ -51,6 +55,20 @@ public enum FollowServerApp {
 
         let outbox = OutboxWorker(store: store, delivery: delivery, configuration: configuration, logger: ServerLog.make("outbox", level: configuration.logLevel))
         let pipeline = FollowPipeline(store: store, outbox: outbox, logger: ServerLog.make("pipeline", level: configuration.logLevel))
+        var swings: SwingWatcher?
+        if configuration.evalEnabled {
+            var engineConfiguration = UCIConfiguration(executablePath: configuration.stockfishPath)
+            engineConfiguration.hashMegabytes = configuration.stockfishHashMegabytes
+            let engine = UCIProcess(configuration: engineConfiguration, logger: ServerLog.make("engine", level: configuration.logLevel))
+            let watcher = SwingWatcher(
+                engine: engine,
+                configuration: configuration.swings,
+                classifier: SwingClassifier(threshold: configuration.swingThreshold),
+                logger: ServerLog.make("swings", level: configuration.logLevel))
+            await watcher.setHandler { [pipeline] event, context in await pipeline.dispatchSwing(event, context: context) }
+            await pipeline.attach(swings: watcher)
+            swings = watcher
+        }
         let coordinator = WatchCoordinator(
             store: store,
             source: source,
@@ -89,6 +107,7 @@ public enum FollowServerApp {
                 group.addTask { try await application.runService() }
                 group.addTask { await coordinator.run() }
                 group.addTask { await outbox.run() }
+                if let swings { group.addTask { await swings.run() } }
                 try await group.next()
                 group.cancelAll()
             }

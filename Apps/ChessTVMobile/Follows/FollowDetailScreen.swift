@@ -26,7 +26,11 @@ struct FollowDetailScreen: View {
                     }
                 }
 
-                AlertSwitchList(alerts: binding, kind: follow.followKind)
+                AlertSwitchList(
+                    alerts: binding,
+                    kind: follow.followKind,
+                    swingsAvailable: app.follows.swingFollowCount(excluding: follow.id) < FollowAlerts.maximumEvalSwingFollows
+                )
 
                 Section {
                     Button("Unfollow", systemImage: "bell.slash", role: .destructive) {

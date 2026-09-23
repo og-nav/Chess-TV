@@ -41,7 +41,22 @@ if arguments.contains("--help") || arguments.contains("-h") {
 
 if arguments.contains("--check") {
     let configuration = ServerConfig.fromEnvironment()
-    let problems = configuration.problems()
+    var problems = configuration.problems()
+    // With swings on, prove the engine runs in this image — libraries, launcher, network and all
+    // — before a deploy swaps it in. A short search, then the process is gone again.
+    if problems.isEmpty, configuration.evalEnabled {
+        var engineConfiguration = UCIConfiguration(executablePath: configuration.stockfishPath)
+        engineConfiguration.hashMegabytes = configuration.stockfishHashMegabytes
+        let engine = UCIProcess(configuration: engineConfiguration)
+        do {
+            let result = try await engine.search(fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", movetimeMs: 300)
+            let launcher = engineConfiguration.launcherPath.map { FileManager.default.isExecutableFile(atPath: $0) } ?? false
+            print("engine: depth \(result.depth) in 300 ms, score \(result.score.display), idle scheduling \(launcher ? "on" : "unavailable")")
+        } catch {
+            problems.append("the engine did not answer a search: \(error)")
+        }
+        await engine.stop()
+    }
     if problems.isEmpty {
         print("ok: \(configuration.summary)")
         exit(0)

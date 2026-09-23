@@ -152,7 +152,8 @@ enum Credits {
             id: "stockfish",
             title: "Stockfish 19",
             lines: [
-                "Analysis is Stockfish 19, running on this device and never on a server, with its NNUE neural network.",
+                "The eval bar is Stockfish 19, running on this device, with its NNUE neural network.",
+                "Big-swing alerts are judged by a copy of Stockfish 19 on the Chess TV server. It sees only the public broadcast positions it is asked about, never anything from this device.",
                 "Stockfish is free software under the GNU General Public License, version 3.",
                 "Its neural network, nn-1a298aa575a0.nnue, is published by the Stockfish project at tests.stockfishchess.org under the same licence.",
                 "Chess TV is under the same licence. Its source is available at \(sourceURL).",

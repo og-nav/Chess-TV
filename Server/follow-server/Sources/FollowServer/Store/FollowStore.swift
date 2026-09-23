@@ -28,6 +28,24 @@ public enum StoreError: Error, Sendable, Equatable {
     /// The store was closed. A watcher or worker that outlives shutdown gets this instead of a
     /// query against a freed `sqlite3*`, which is undefined behaviour and has crashed the test host.
     case closed
+    /// A server-wide ceiling was reached. Not the caller's fault and not permanent, so the API
+    /// answers 503 rather than 4xx.
+    case full(String)
+}
+
+/// Server-wide ceilings on what anonymous installs can make the database hold.
+///
+/// Registration needs no account, so nothing stops a script from minting installs and filling
+/// each with a hundred follows. These caps are what keep that from filling the disk this box
+/// shares with other services. At the limit new rows are refused; existing installs keep working.
+public struct StoreLimits: Sendable, Equatable {
+    public var maximumDevices: Int = 20_000
+    public var maximumFollows: Int = 200_000
+
+    public init(maximumDevices: Int = 20_000, maximumFollows: Int = 200_000) {
+        self.maximumDevices = maximumDevices
+        self.maximumFollows = maximumFollows
+    }
 }
 
 public actor FollowStore {
@@ -36,10 +54,12 @@ public actor FollowStore {
     private let logger: Logger
     /// Injected so tests can run a day of a tournament in a few milliseconds.
     private let now: @Sendable () -> Date
+    private let limits: StoreLimits
 
-    private init(connection: SQLiteConnection, logger: Logger, now: @escaping @Sendable () -> Date) {
+    private init(connection: SQLiteConnection, logger: Logger, limits: StoreLimits, now: @escaping @Sendable () -> Date) {
         self.connection = connection
         self.logger = logger
+        self.limits = limits
         self.now = now
     }
 
@@ -51,11 +71,12 @@ public actor FollowStore {
     public static func open(
         path: String,
         logger: Logger = ServerLog.make("store"),
+        limits: StoreLimits = StoreLimits(),
         now: @escaping @Sendable () -> Date = { Date() }
     ) async throws -> FollowStore {
         let storage: SQLiteConnection.Storage = path == ":memory:" ? .memory : .file(path: path)
         let connection = try await SQLiteConnection.open(storage: storage, logger: logger)
-        let store = FollowStore(connection: connection, logger: logger, now: now)
+        let store = FollowStore(connection: connection, logger: logger, limits: limits, now: now)
         try await store.prepare()
         return store
     }
@@ -174,6 +195,10 @@ public actor FollowStore {
             let deviceId = "d_" + InstallToken.identifier()
 
             try await transaction {
+                let count = try await query("SELECT COUNT(*) AS n FROM devices")
+                guard (count.first?.column("n")?.integer ?? 0) < limits.maximumDevices else {
+                    throw StoreError.full("The server is not taking new installs right now")
+                }
                 _ = try await query(
                     """
                     INSERT INTO devices (device_id, token_hash, platform, environment, apns_token, app_version, created_at, last_seen_at)
@@ -327,6 +352,13 @@ public actor FollowStore {
                     guard (count.first?.column("n")?.integer ?? 0) < Self.maximumFollowsPerDevice else {
                         throw StoreError.conflict("An install can follow at most 100 players, games and tournaments")
                     }
+                    let total = try await query("SELECT COUNT(*) AS n FROM follows")
+                    guard (total.first?.column("n")?.integer ?? 0) < limits.maximumFollows else {
+                        throw StoreError.full("The server is not taking new follows right now")
+                    }
+                }
+                if alerts.evalSwings {
+                    try await requireSwingRoom(deviceId: deviceId) { $0.target == follow.target }
                 }
                 _ = try await query(
                     """
@@ -356,6 +388,9 @@ public actor FollowStore {
         let data = try FollowJSON.encoder.encode(alerts.clamped())
         return try await exclusive {
             try await transaction {
+                if alerts.evalSwings {
+                    try await requireSwingRoom(deviceId: deviceId) { $0.id == id }
+                }
                 _ = try await query(
                     "UPDATE follows SET alerts_json = ? WHERE id = ? AND device_id = ?",
                     [.text(String(decoding: data, as: UTF8.self)), .text(id), .text(deviceId)]
@@ -367,6 +402,17 @@ public actor FollowStore {
                 guard let row = rows.first else { throw StoreError.notFound }
                 return try Self.follow(from: row)
             }
+        }
+    }
+
+    /// Throws unless the install has fewer than `AlertEngine.maximumSwingFollowsPerDevice` other
+    /// follows with swing alerts on. The alert engine applies the same cap again when it matches;
+    /// this is so the app's switch says no instead of silently doing nothing.
+    private func requireSwingRoom(deviceId: String, excluding isSame: (Follow) -> Bool) async throws {
+        let rows = try await query("SELECT * FROM follows WHERE device_id = ?", [.text(deviceId)])
+        let others = try rows.map(Self.follow(from:)).filter { $0.alerts.evalSwings && !isSame($0) }
+        guard others.count < AlertEngine.maximumSwingFollowsPerDevice else {
+            throw StoreError.conflict("Eval swing alerts can be on for at most \(AlertEngine.maximumSwingFollowsPerDevice) follows")
         }
     }
 
@@ -808,7 +854,14 @@ public actor FollowStore {
     /// Delivered, dropped and failed outbox rows after a week — long enough to answer "what did
     /// you try to send me", and the dedupe index only has to outlive the chance of the same event
     /// being observed again. Game baselines a week after their last update, and rounds a month
-    /// after they finished. Disabled installs that follow nothing go after ninety days.
+    /// after they finished.
+    ///
+    /// Installs go on two rules, follows and all. One APNs has disowned for a week: the token was
+    /// invented or the app is gone, and a real phone that rotated its token has long since sent the
+    /// new one. And one that has not called in for thirty days and has had nothing delivered in the
+    /// outbox's week — the shape of a scripted install, which never opens the app again. Neither
+    /// loses a real user anything for good: a live app that finds its token rejected registers
+    /// again and re-sends every follow it holds (`DeviceRegistrar.credentialRejected`).
     /// - Returns: how many rows went.
     @discardableResult
     public func sweep(now current: Date) async throws -> Int {
@@ -816,20 +869,32 @@ public actor FollowStore {
             let day: TimeInterval = 86_400
             let stamp = current.timeIntervalSince1970
             var removed = 0
-            removed += try await query(
-                "DELETE FROM outbox WHERE state != ? AND queued_at < ? RETURNING id",
-                [.text(OutboxState.queued.rawValue), .float(stamp - 7 * day)]
-            ).count
-            removed += try await query("DELETE FROM game_baselines WHERE updated_at < ? RETURNING game_id", [.float(stamp - 7 * day)]).count
-            removed += try await query("DELETE FROM rounds WHERE finished = 1 AND updated_at < ? RETURNING round_id", [.float(stamp - 30 * day)]).count
-            removed += try await query(
-                """
-                DELETE FROM devices WHERE disabled_at IS NOT NULL AND disabled_at < ?
-                    AND NOT EXISTS (SELECT 1 FROM follows f WHERE f.device_id = devices.device_id)
-                RETURNING device_id
-                """,
-                [.float(stamp - 90 * day)]
-            ).count
+            try await transaction {
+                removed += try await query(
+                    "DELETE FROM outbox WHERE state != ? AND queued_at < ? RETURNING id",
+                    [.text(OutboxState.queued.rawValue), .float(stamp - 7 * day)]
+                ).count
+                removed += try await query("DELETE FROM game_baselines WHERE updated_at < ? RETURNING game_id", [.float(stamp - 7 * day)]).count
+                removed += try await query("DELETE FROM rounds WHERE finished = 1 AND updated_at < ? RETURNING round_id", [.float(stamp - 30 * day)]).count
+                // After the outbox sweep above, so "nothing delivered" means nothing in the week
+                // the outbox still remembers.
+                let stale = try await query(
+                    """
+                    SELECT device_id FROM devices
+                    WHERE (disabled_at IS NOT NULL AND disabled_at < ?)
+                       OR (last_seen_at < ? AND NOT EXISTS (
+                               SELECT 1 FROM outbox o WHERE o.device_id = devices.device_id AND o.state = ?))
+                    """,
+                    [.float(stamp - 7 * day), .float(stamp - 30 * day), .text(OutboxState.delivered.rawValue)]
+                ).compactMap { $0.column("device_id")?.string }
+                for id in stale {
+                    // The same order as `deleteDevice`: the two tables without a cascade first.
+                    _ = try await query("DELETE FROM move_alert_log WHERE follow_id IN (SELECT id FROM follows WHERE device_id = ?)", [.text(id)])
+                    _ = try await query("DELETE FROM outbox WHERE device_id = ?", [.text(id)])
+                    _ = try await query("DELETE FROM devices WHERE device_id = ?", [.text(id)])
+                }
+                removed += stale.count
+            }
             return removed
         }
     }

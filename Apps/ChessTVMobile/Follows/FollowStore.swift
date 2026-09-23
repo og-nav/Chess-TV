@@ -151,6 +151,11 @@ final class FollowStore {
 
     func follow(for target: FollowTarget) -> Follow? { follows.first { $0.target == target } }
 
+    /// How many follows other than `id` have big swings on, against the server's per-install cap.
+    func swingFollowCount(excluding id: String?) -> Int {
+        follows.filter { $0.alerts.evalSwings && $0.id != id }.count
+    }
+
     func isFollowing(_ target: FollowTarget) -> Bool { follow(for: target) != nil }
 
     /// The follows of one kind, newest first — the order the Following tab lists them in.
@@ -382,8 +387,9 @@ final class FollowStore {
                 case .alerts: return .rejected("The server has no record of that follow")
                 default: return .retry
                 }
-            case .rejected:
-                return .rejected("The server refused the change")
+            case .rejected(let reason):
+                // The server's own words when it gave any: "at most 10 follows" says what to do.
+                return .rejected(reason.isEmpty ? "The server refused the change" : reason)
             // Everything below is worth trying again: the phone is offline, the host is down,
             // the address is wrong and can be corrected, or registration has not happened yet.
             case .unavailable, .malformedResponse, .notRegistered, .unauthorized, .insecureBaseURL:

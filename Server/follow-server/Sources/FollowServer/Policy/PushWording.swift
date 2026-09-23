@@ -28,6 +28,15 @@ public enum PushWording {
             return "Game over: \(result(push.status))"
         case .gameResult:
             return "\(push.white.name) \(result(push.status)) \(push.black.name)"
+        case .evalSwing:
+            let mover = mover(of: push) ?? push.white.name
+            let move = push.numberedSAN.map { ": \($0)" } ?? ""
+            switch push.swing?.kind {
+            case "throwsWin": return "\(mover) lets the win slip\(move)"
+            case "allowsMate": return "\(mover) walks into mate\(move)"
+            case "missesMate": return "\(mover) misses a forced mate\(move)"
+            default: return "Blunder by \(mover)\(move)"
+            }
         case nil:
             return "\(push.white.name) – \(push.black.name)"
         }
@@ -40,6 +49,10 @@ public enum PushWording {
         switch push.pushKind {
         case .gameEnd, .gameResult:
             parts.insert("\(push.white.name) – \(push.black.name)", at: 0)
+        case .evalSwing:
+            // The evaluation is the news; the clocks can wait for the app.
+            if let swing = push.swing { parts.insert("Stockfish \(swing.before) → \(swing.after)", at: 0) }
+            parts.insert("\(push.white.name) – \(push.black.name)", at: 0)
         default:
             if let clocks = clocks(of: push) { parts.append(clocks) }
         }
@@ -51,6 +64,7 @@ public enum PushWording {
     public static func relevance(for kind: MovePushKind) -> Double {
         switch kind {
         case .gameEnd, .gameResult: 1.0
+        case .evalSwing: 0.8
         case .gameStart: 0.6
         case .longThink: 0.5
         case .move: 0.4

@@ -55,6 +55,12 @@ enum AlertCatalogue {
         }
     }
 
+    // The engine switch, which is not a `GameAlert` or a `TourAlert` but its own field.
+    static let swingTitle = "Big swings"
+    static let swingDetail = "A blunder, a win thrown away, or a mate walked into or missed."
+    static let swingFooter = "Judged by Stockfish on the Chess TV server a few seconds after the move. Classical games only."
+    static let swingLimitText = "Big swings can be on for \(FollowAlerts.maximumEvalSwingFollows) follows at a time. Turn it off on another follow to use it here."
+
     /// `minMinutesBetweenMoveAlerts` only means anything while a move switch is on.
     static func movePacingApplies(to alerts: FollowAlerts, kind: FollowKind) -> Bool {
         alerts.sendsMoveAlerts(for: kind)

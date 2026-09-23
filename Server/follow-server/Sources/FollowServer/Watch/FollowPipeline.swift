@@ -16,12 +16,19 @@ public actor FollowPipeline {
     private let engine: AlertEngine
     private let outbox: OutboxWorker
     private let logger: Logger
+    /// The engine queue, when this server runs one. Nil means no swing alerts, and nothing below
+    /// changes.
+    private var swings: SwingWatcher?
 
     public init(store: FollowStore, outbox: OutboxWorker, engine: AlertEngine = AlertEngine(), logger: Logger = ServerLog.make("pipeline")) {
         self.store = store
         self.engine = engine
         self.outbox = outbox
         self.logger = logger
+    }
+
+    public func attach(swings: SwingWatcher) {
+        self.swings = swings
     }
 
     // Serializes read/plan/write across actor suspension points. Different watcher tasks and
@@ -58,7 +65,13 @@ public actor FollowPipeline {
         // Queue before advancing the baseline. A crash between these writes then repeats a
         // candidate (deduped by SQLite) instead of permanently losing its alert.
         if !outcome.events.isEmpty {
-            try await dispatch(events: outcome.events, context: context, now: now)
+            let devices = try await store.deviceContexts()
+            try await dispatch(events: outcome.events, context: context, now: now, devices: devices)
+            // Offered to the engine only when a move was made and someone could hear the verdict.
+            if let swings, outcome.events.contains(where: { $0.kind == .move || $0.kind == .gameStart }),
+               engine.wantsSwings(snapshot: snapshot, context: context, devices: devices, now: now) {
+                await swings.consider(snapshot: snapshot, context: context)
+            }
         } else if baseline?.fen != snapshot.fen || baseline?.ply != snapshot.ply || baseline?.status != snapshot.status {
             // Alert silence for a correction does not mean leave the pinned board stale.
             // Activity identity includes the observation time, so a takeback followed by a
@@ -123,6 +136,18 @@ public actor FollowPipeline {
             now: now
         )
         try await commit(plan, now: now)
+    }
+
+    /// A verdict from `SwingWatcher`, arriving seconds after the move it is about. Planned like
+    /// any other board event, against the follows and preferences as they are now.
+    public func dispatchSwing(_ event: MoveEvent, context: RoundContext) async {
+        await acquire()
+        defer { release() }
+        do {
+            try await dispatch(events: [event], context: context, now: event.at)
+        } catch {
+            logger.error("swing dispatch failed", metadata: ["error": .string(String(describing: type(of: error)))])
+        }
     }
 
     public func dispatch(tournamentEvents: [TournamentEvent], now: Date) async throws {

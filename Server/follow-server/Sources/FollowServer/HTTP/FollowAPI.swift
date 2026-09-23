@@ -59,6 +59,10 @@ public struct FollowAPI: Sendable {
 
         // MARK: Open endpoints
 
+        // The App Store listing's support and privacy URLs: static, public, no token.
+        router.get("/privacy") { _, _ in Self.page(PublicPages.privacy) }
+        router.get("/support") { _, _ in Self.page(PublicPages.support) }
+
         router.get("/v1/health") { _, _ in
             try JSONBody.response(await health())
         }
@@ -71,7 +75,13 @@ public struct FollowAPI: Sendable {
             guard registration.isWellFormed else {
                 throw HTTPError(.unprocessableContent, message: "registration is not well formed")
             }
-            let result = try await store.register(registration)
+            let result: (credential: DeviceCredential, device: DeviceRecord)
+            do {
+                result = try await store.register(registration)
+            } catch StoreError.full(let reason) {
+                logger.warning("registration refused: device ceiling reached")
+                throw HTTPError(.serviceUnavailable, message: reason)
+            }
             // The device id is fine in a log; the install token is not, ever.
             logger.info("registered", metadata: [
                 "device": .string(result.device.id),
@@ -126,6 +136,9 @@ public struct FollowAPI: Sendable {
                 return try JSONBody.response(stored, status: .created)
             } catch StoreError.conflict(let reason) {
                 throw HTTPError(.unprocessableContent, message: reason)
+            } catch StoreError.full(let reason) {
+                logger.warning("follow refused: follow ceiling reached")
+                throw HTTPError(.serviceUnavailable, message: reason)
             }
         }
 
@@ -137,6 +150,8 @@ public struct FollowAPI: Sendable {
                 return try JSONBody.response(await store.updateFollow(id: id, alerts: alerts, deviceId: deviceId))
             } catch StoreError.notFound {
                 throw HTTPError(.notFound)
+            } catch StoreError.conflict(let reason) {
+                throw HTTPError(.unprocessableContent, message: reason)
             }
         }
 
@@ -192,7 +207,15 @@ public struct FollowAPI: Sendable {
         return router
     }
 
-    private static func validIdentifier(_ value: String) -> Bool {
+    private static func page(_ html: String) -> Response {
+        Response(
+            status: .ok,
+            headers: [.contentType: "text/html; charset=utf-8", .cacheControl: "public, max-age=3600"],
+            body: ResponseBody(byteBuffer: ByteBuffer(string: html))
+        )
+    }
+
+        private static func validIdentifier(_ value: String) -> Bool {
         (1...128).contains(value.utf8.count) && value.utf8.allSatisfy {
             (48...57).contains($0) || (65...90).contains($0) || (97...122).contains($0) || $0 == 45 || $0 == 95
         }
